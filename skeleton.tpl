@@ -5,6 +5,6 @@ int printf(const char * restrict format, ...);
 
 int main(void)
 {
-	{{CODE}}
+{{CODE}}
 	return 0;
 }
