@@ -4,4 +4,6 @@ Project(ccons)
 
 add_executable(ccons ccons.cpp)
 
-target_link_libraries(ccons /usr/local/lib/libctemplate.a)
+set(LIBS ${LIBS} /usr/local/lib/libctemplate.a)
+set(LIBS ${LIBS} /usr/local/lib/libedit.a -lcurses)
+target_link_libraries(ccons ${LIBS})
