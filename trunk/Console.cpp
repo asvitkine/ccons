@@ -7,6 +7,7 @@
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Module.h>
+#include <llvm/ModuleProvider.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 #include <clang/AST/AST.h>
@@ -36,7 +37,7 @@ public:
 
 	void VisitStmt(clang::Stmt *S) {
 		if (clang::Expr *E = dyn_cast<clang::Expr>(S)) {
-			if (E->getExprLoc().getRawFilePos() == pos) {
+			if (E->getLocStart().getRawFilePos() == pos) {
 				this->S = S;
 			}
 		}
@@ -86,15 +87,15 @@ const char * Console::prompt() const
 
 class ProxyDiagnosticClient : public clang::DiagnosticClient {
 public:
-	ProxyDiagnosticClient(clang::DiagnosticClient * dc) : dc(dc) {}
+	ProxyDiagnosticClient(clang::DiagnosticClient *DC) : DC(DC) {}
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel, const clang::DiagnosticInfo &Info) {
 		if (Info.getID() != clang::diag::warn_unused_expr)
-			dc->HandleDiagnostic(DiagLevel, Info);
+			DC->HandleDiagnostic(DiagLevel, Info);
 	}
 
 private:
-	clang::DiagnosticClient *dc;
+	clang::DiagnosticClient *DC;
 };
 
 string transform(string line, string type)
@@ -127,6 +128,8 @@ string transform(string line, string type)
 	if (!format_string.empty()) {
 		line = line.substr(0, line.length() - 1);
 		line = "printf(\"=> (" + type + ") " + format_string + "\\n\"," + line + ");\n";
+	} else {
+		line.clear();
 	}
 
 	return line;
@@ -134,7 +137,7 @@ string transform(string line, string type)
 
 void Console::process(const char * line)
 {
-	string header = "int main(void){\n";
+	string header = "int main(int argc, char *argv[])\n{\n";
 	string footer = "return 0;\n}\n";
 
 	const unsigned pos = header.length() + _body.length();
@@ -163,14 +166,17 @@ void Console::process(const char * line)
 				_parser.parse(source2, &diag, codegen.get());
 				llvm::Module *module = codegen->ReleaseModule();
 				if (module) {
-					llvm::OwningPtr<llvm::ExecutionEngine> engine(llvm::ExecutionEngine::create(module));
-					assert(engine);
+					// provider takes ownership of module
+					llvm::ExistingModuleProvider *provider = new llvm::ExistingModuleProvider(module);
+					// execution engine takes ownership of provider
+					llvm::OwningPtr<llvm::ExecutionEngine> engine(llvm::ExecutionEngine::create(provider, /* ForceInterpreter = */ true));
+					assert(engine && "Could not create llvm::ExecutionEngine!");
 					std::vector<std::string> params;
 					params.push_back(">>>");
 					engine->runFunctionAsMain(module->getFunction("main"), params, 0);
 				}
 			} else {
-				std::cout << "Type is " << type << "\n";
+				std::cout << "=> (" << type << ")\n";
 			}
 		}
 	}
