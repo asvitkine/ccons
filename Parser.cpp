@@ -23,7 +23,7 @@ Parser::~Parser()
 {
 }
 
-void Parser::parse(string source, clang::Diagnostic *diag, clang::ASTConsumer *consumer)
+clang::Preprocessor * Parser::parse(string source, clang::Diagnostic *diag, clang::ASTConsumer *consumer)
 {
 	llvm::MemoryBuffer *mb = llvm::MemoryBuffer::getMemBufferCopy(&*source.begin(), &*source.end(), "Main");
 	assert(mb);
@@ -35,8 +35,9 @@ void Parser::parse(string source, clang::Diagnostic *diag, clang::ASTConsumer *c
 	ihs.AddDefaultEnvVarPaths(_options);
 	ihs.AddDefaultSystemIncludePaths(_options);
 	ihs.Realize();
-	clang::Preprocessor pp(*diag, _options, *_target, sm, headers);
-	clang::ParseAST(pp, consumer, false, false);
+	clang::Preprocessor *pp = new clang::Preprocessor(*diag, _options, *_target, sm, headers);
+	clang::ParseAST(*pp, consumer, /* PrintStats = */ false, /* FreeMemory = */ false);
+	return pp;
 }
 
 } // namespace ccons

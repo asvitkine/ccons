@@ -10,8 +10,9 @@
 #include <clang/Basic/FileManager.h>
 
 namespace clang {
-  class ASTConsumer;
-  class Diagnostic;
+	class ASTConsumer;
+	class Diagnostic;
+	class Preprocessor;
 } // namespace clang
 
 
@@ -24,7 +25,7 @@ public:
 	explicit Parser(const clang::LangOptions& options);
 	virtual ~Parser();
 
-	void parse(std::string source, clang::Diagnostic *diag, clang::ASTConsumer *consumer);
+	clang::Preprocessor * parse(std::string source, clang::Diagnostic *diag, clang::ASTConsumer *consumer);
 
 private:
 
