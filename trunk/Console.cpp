@@ -15,6 +15,7 @@
 #include <clang/Driver/CompileOptions.h>
 #include <clang/Driver/TextDiagnosticPrinter.h>
 #include <clang/CodeGen/ModuleBuilder.h>
+#include <clang/Lex/Preprocessor.h>
 
 
 using std::string;
@@ -154,7 +155,8 @@ void Console::process(const char * line)
 
 	StmtFinder finder(pos);
 	FunctionBodyConsumer consumer(&finder);
-	_parser.parse(source, &diag, &consumer);
+	// we need to keep the preprocessor around as it contains the identifier table
+	llvm::OwningPtr<clang::Preprocessor> pp(_parser.parse(source, &diag, &consumer));
 	if (clang::Stmt *S = finder.getStmt()) {
 		if (clang::Expr *E = dyn_cast<clang::Expr>(S)) {
 			string type = E->getType().getAsString();
@@ -163,7 +165,7 @@ void Console::process(const char * line)
 			if (!transformed_line.empty()) {
 				string source2 = header + old_body + transformed_line + footer;
 				llvm::OwningPtr<clang::CodeGenerator> codegen(CreateLLVMCodeGen(diag, _options, "-", false));
-				_parser.parse(source2, &diag, codegen.get());
+				pp.reset(_parser.parse(source2, &diag, codegen.get()));
 				llvm::Module *module = codegen->ReleaseModule();
 				if (module) {
 					// provider takes ownership of module
