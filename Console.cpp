@@ -104,9 +104,13 @@ string transform(string line, string type)
 	std::map<string, string> type_to_format_string;
 	type_to_format_string[string("char")] = string("'%c'"); // or %hii if its not printable?
 	type_to_format_string[string("short")] = string("%hi");
+	type_to_format_string[string("unsigned short")] = string("%hu");
 	type_to_format_string[string("int")] = string("%i");
+	type_to_format_string[string("unsigned int")] = string("%u");
 	type_to_format_string[string("long")] = string("%li");
+	type_to_format_string[string("unsigned long")] = string("%lu");
 	type_to_format_string[string("long long")] = string("%lli");
+	type_to_format_string[string("unsigned long long")] = string("%llu");
 	type_to_format_string[string("float")] = string("%f");
 	type_to_format_string[string("double")] = string("%lf");
 	type_to_format_string[string("long double")] = string("%Lf");
