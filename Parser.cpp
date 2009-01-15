@@ -35,7 +35,7 @@ clang::Preprocessor * Parser::parse(string source, clang::Diagnostic *diag, clan
 	ihs.AddDefaultEnvVarPaths(_options);
 	ihs.AddDefaultSystemIncludePaths(_options);
 	ihs.Realize();
-	clang::Preprocessor *pp = new clang::Preprocessor(*diag, _options, *_target, sm, headers);
+	clang::Preprocessor *pp = new clang::Preprocessor(*diag, _options, *_target, sm, headers, NULL);
 	clang::ParseAST(*pp, consumer, /* PrintStats = */ false, /* FreeMemory = */ false);
 	return pp;
 }
