@@ -29,7 +29,7 @@ clang::Preprocessor * Parser::parse(string source, clang::Diagnostic *diag, clan
 	assert(mb);
 	clang::SourceManager sm;
 	sm.createMainFileIDForMemBuffer(mb);
-	assert(sm.getMainFileID());
+	assert(!sm.getMainFileID().isInvalid());
 	clang::HeaderSearch headers(_fm);
 	clang::InitHeaderSearch ihs(headers);
 	ihs.AddDefaultEnvVarPaths(_options);
