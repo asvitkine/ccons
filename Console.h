@@ -19,6 +19,7 @@ public:
 
 private:
 
+	std::string _includes;
 	std::string _prompt;
 	std::string _body;
 	clang::LangOptions _options;
