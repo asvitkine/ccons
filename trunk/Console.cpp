@@ -72,6 +72,7 @@ private:
 
 Console::Console() :
 	_parser(_options),
+	_includes("#include<stdio.h>\n"),
 	_prompt(">>> ")
 {
 	_options.C99 = true;
@@ -145,12 +146,22 @@ void Console::process(const char * line)
 	string header = "int main(int argc, char *argv[])\n{\n";
 	string footer = "return 0;\n}\n";
 
-	const unsigned pos = header.length() + _body.length();
+	const unsigned pos = _includes.length() + header.length() + _body.length();
 	string old_body = _body;
-	_body += line;
-	_body += "\n";
 
-	string source = header + _body + footer;
+	bool include = false;
+	string unspaced = line;
+	std::remove(unspaced.begin(), unspaced.end(), ' ');
+	if (!strncmp(unspaced.c_str(), "#include", 8)) {
+		_includes += line;
+		_includes += "\n";
+		include = true;
+	} else {
+		_body += line;
+		_body += "\n";
+	}
+
+	string source = _includes + header + _body + footer;
 
 	clang::TextDiagnosticPrinter tdp(llvm::errs());
 	ProxyDiagnosticClient pdc(&tdp);
@@ -161,27 +172,35 @@ void Console::process(const char * line)
 	FunctionBodyConsumer consumer(&finder);
 	// we need to keep the preprocessor around as it contains the identifier table
 	llvm::OwningPtr<clang::Preprocessor> pp(_parser.parse(source, &diag, &consumer));
+
+	if (include)
+		return;
+
 	if (clang::Stmt *S = finder.getStmt()) {
 		if (clang::Expr *E = dyn_cast<clang::Expr>(S)) {
 			string type = E->getType().getAsString();
 			string format_string;
 			string transformed_line = transform(line, type);
-			if (!transformed_line.empty()) {
-				string source2 = header + old_body + transformed_line + footer;
-				llvm::OwningPtr<clang::CodeGenerator> codegen(CreateLLVMCodeGen(diag, _options, "-", false));
-				pp.reset(_parser.parse(source2, &diag, codegen.get()));
-				llvm::Module *module = codegen->ReleaseModule();
-				if (module) {
-					// provider takes ownership of module
-					llvm::ExistingModuleProvider *provider = new llvm::ExistingModuleProvider(module);
-					// execution engine takes ownership of provider
-					llvm::OwningPtr<llvm::ExecutionEngine> engine(llvm::ExecutionEngine::create(provider, /* ForceInterpreter = */ true));
-					assert(engine && "Could not create llvm::ExecutionEngine!");
-					std::vector<std::string> params;
-					params.push_back(">>>");
-					engine->runFunctionAsMain(module->getFunction("main"), params, 0);
-				}
-			} else {
+			bool print_type = false;
+			if (transformed_line.empty()) {
+				transformed_line = line;
+				print_type = true;
+			}
+			string source2 = _includes + header + old_body + transformed_line + footer;
+			llvm::OwningPtr<clang::CodeGenerator> codegen(CreateLLVMCodeGen(diag, _options, "-", false));
+			pp.reset(_parser.parse(source2, &diag, codegen.get()));
+			llvm::Module *module = codegen->ReleaseModule();
+			if (module) {
+				// provider takes ownership of module
+				llvm::ExistingModuleProvider *provider = new llvm::ExistingModuleProvider(module);
+				// execution engine takes ownership of provider
+				llvm::OwningPtr<llvm::ExecutionEngine> engine(llvm::ExecutionEngine::create(provider, /* ForceInterpreter = */ true));
+				assert(engine && "Could not create llvm::ExecutionEngine!");
+				std::vector<std::string> params;
+				params.push_back(">>>");
+				engine->runFunctionAsMain(module->getFunction("main"), params, 0);
+			}
+			if (print_type) {
 				std::cout << "=> (" << type << ")\n";
 			}
 		}
