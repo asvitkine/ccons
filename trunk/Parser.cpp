@@ -23,19 +23,21 @@ Parser::~Parser()
 {
 }
 
-clang::Preprocessor * Parser::parse(string source, clang::Diagnostic *diag, clang::ASTConsumer *consumer)
+clang::Preprocessor * Parser::parse(string source,
+                                    clang::SourceManager *sm,
+                                    clang::Diagnostic *diag,
+                                    clang::ASTConsumer *consumer)
 {
 	llvm::MemoryBuffer *mb = llvm::MemoryBuffer::getMemBufferCopy(&*source.begin(), &*source.end(), "Main");
 	assert(mb);
-	clang::SourceManager sm;
-	sm.createMainFileIDForMemBuffer(mb);
-	assert(!sm.getMainFileID().isInvalid());
+	sm->createMainFileIDForMemBuffer(mb);
+	assert(!sm->getMainFileID().isInvalid());
 	clang::HeaderSearch headers(_fm);
 	clang::InitHeaderSearch ihs(headers);
 	ihs.AddDefaultEnvVarPaths(_options);
 	ihs.AddDefaultSystemIncludePaths(_options);
 	ihs.Realize();
-	clang::Preprocessor *pp = new clang::Preprocessor(*diag, _options, *_target, sm, headers, NULL);
+	clang::Preprocessor *pp = new clang::Preprocessor(*diag, _options, *_target, *sm, headers, NULL);
 	clang::ParseAST(*pp, consumer, /* PrintStats = */ false, /* FreeMemory = */ false);
 	return pp;
 }
