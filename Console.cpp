@@ -12,6 +12,7 @@
 
 #include <clang/AST/AST.h>
 #include <clang/Basic/LangOptions.h>
+#include <clang/Basic/SourceManager.h>
 #include <clang/Driver/CompileOptions.h>
 #include <clang/Driver/TextDiagnosticPrinter.h>
 #include <clang/CodeGen/ModuleBuilder.h>
@@ -25,7 +26,8 @@ namespace ccons {
 class StmtFinder : public clang::StmtVisitor<StmtFinder> {
 public:
 
-	explicit StmtFinder(unsigned pos) : pos(pos), S(NULL) {}
+	explicit StmtFinder(unsigned pos, const clang::SourceManager& sm) :
+		_pos(pos), _sm(sm), _S(NULL) {}
 	~StmtFinder() {}
 
 	void VisitChildren(clang::Stmt *S) {
@@ -38,17 +40,18 @@ public:
 
 	void VisitStmt(clang::Stmt *S) {
 		if (clang::Expr *E = dyn_cast<clang::Expr>(S)) {
-			if (E->getLocStart().getRawFilePos() == pos) {
-				this->S = S;
+			if (_sm.getDecomposedFileLoc(E->getLocStart()).second == _pos) {
+				_S = S;
 			}
 		}
 	}
 
-	clang::Stmt *getStmt() { return S; }
+	clang::Stmt *getStmt() { return _S; }
 
 private:
-	unsigned pos;
-	clang::Stmt *S;
+	unsigned _pos;
+	const clang::SourceManager& _sm;
+	clang::Stmt *_S;
 };
 
 class FunctionBodyConsumer : public clang::ASTConsumer {
@@ -168,10 +171,11 @@ void Console::process(const char * line)
 	clang::Diagnostic diag(&pdc);
 	diag.setSuppressSystemWarnings(true);
 
-	StmtFinder finder(pos);
+	clang::SourceManager sm;
+	StmtFinder finder(pos, sm);
 	FunctionBodyConsumer consumer(&finder);
 	// we need to keep the preprocessor around as it contains the identifier table
-	llvm::OwningPtr<clang::Preprocessor> pp(_parser.parse(source, &diag, &consumer));
+	llvm::OwningPtr<clang::Preprocessor> pp(_parser.parse(source, &sm, &diag, &consumer));
 
 	if (include)
 		return;
@@ -188,7 +192,8 @@ void Console::process(const char * line)
 			}
 			string source2 = _includes + header + old_body + transformed_line + footer;
 			llvm::OwningPtr<clang::CodeGenerator> codegen(CreateLLVMCodeGen(diag, _options, "-", false));
-			pp.reset(_parser.parse(source2, &diag, codegen.get()));
+			clang::SourceManager sm2;
+			pp.reset(_parser.parse(source2, &sm2, &diag, codegen.get()));
 			llvm::Module *module = codegen->ReleaseModule();
 			if (module) {
 				// provider takes ownership of module

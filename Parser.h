@@ -25,7 +25,10 @@ public:
 	explicit Parser(const clang::LangOptions& options);
 	virtual ~Parser();
 
-	clang::Preprocessor * parse(std::string source, clang::Diagnostic *diag, clang::ASTConsumer *consumer);
+	clang::Preprocessor * Parser::parse(std::string source,
+	                                    clang::SourceManager* sm,
+	                                    clang::Diagnostic *diag,
+	                                    clang::ASTConsumer *consumer);
 
 private:
 
