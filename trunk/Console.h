@@ -39,16 +39,24 @@ private:
 		DeclLine,
 		PrprLine,
 	};
+	
+	typedef std::pair<std::string, LineType> CodeLine;
 
-	std::string genSource();
+	std::string genAppendix(const char *line,
+	                        std::string * fName,
+	                        std::string * retType,
+	                        std::vector<CodeLine> * moreLines);
+	std::string genSource(std::string appendix);
 	std::string genFunc(std::string line, std::string fname, std::string type);
-	clang::Stmt * lineToStmt(std::string src, std::string line);
-	bool getExprType(const clang::Expr *E, std::string *type);
+	clang::Stmt * lineToStmt(std::string line,
+	                         clang::SourceManager * sm,
+													 std::string * src);
+	bool getExprType(const clang::Expr *E, std::string * type);
 
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<clang::Preprocessor> _pp;
-	std::vector<std::pair<std::string, LineType> > _lines;
+	std::vector<CodeLine> _lines;
 	std::string _prompt;
 	clang::LangOptions _options;
 	Parser _parser;
