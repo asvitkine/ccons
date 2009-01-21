@@ -23,7 +23,7 @@
 #include <clang/Lex/Preprocessor.h>
 
 
-template <class T>
+template<typename T>
 inline std::string to_string(const T& t)
 {
 	std::stringstream ss;
@@ -53,14 +53,15 @@ public:
 
 	void VisitStmt(clang::Stmt *S) {
 		clang::SourceLocation Loc = S->getLocStart();
-		if (Loc.isFileID() && _sm.getDecomposedFileLoc(Loc).second == _pos) {
+		if (Loc.isFileID() && _sm.getFullFilePos(Loc) == _pos) {
 			_S = S;
 		}
 	}
 
-	clang::Stmt *getStmt() { return _S; }
+	clang::Stmt * getStmt() { return _S; }
 
 private:
+
 	unsigned _pos;
 	const clang::SourceManager& _sm;
 	clang::Stmt *_S;
@@ -81,6 +82,7 @@ public:
 	}
 
 private:
+
 	StmtFinder *SF;
 };
 
@@ -103,6 +105,7 @@ const char * Console::prompt() const
 
 class ProxyDiagnosticClient : public clang::DiagnosticClient {
 public:
+
 	ProxyDiagnosticClient(clang::DiagnosticClient *DC) : _DC(DC) {}
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
@@ -114,6 +117,7 @@ public:
 	}
 
 private:
+
 	clang::DiagnosticClient *_DC;
 };
 
@@ -151,7 +155,7 @@ string formatForType(string type)
 	return format;
 }
 
-string Console::genSource()
+string Console::genSource(string appendix)
 {
 	string src;
 	for (unsigned i = 0; i < _lines.size(); ++i) {
@@ -164,6 +168,7 @@ string Console::genSource()
 			src += "\n";
 		}
 	}
+	src += appendix;
 	return src;
 }
 
@@ -178,22 +183,23 @@ string Console::genFunc(string line, string fname, string type)
 	return func;
 }
 
-clang::Stmt * Console::lineToStmt(std::string src, std::string line)
+clang::Stmt * Console::lineToStmt(std::string line,
+                                  clang::SourceManager * sm,
+                                  std::string * src)
 {
 	// this may fail... if for ex. the line is an include
-	src += "void doStuff() {\n";
-	const unsigned pos = src.length();
-	src += line;
-	src += "\n}\n";
+	*src += "void doStuff() {\n";
+	const unsigned pos = src->length();
+	*src += line;
+	*src += "\n}\n";
 
 	ProxyDiagnosticClient pdc(NULL);
 	clang::Diagnostic diag(&pdc);
 	diag.setSuppressSystemWarnings(true);
 
-	clang::SourceManager sm;
-	StmtFinder finder(pos, sm);
+	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer consumer(&finder);
-	_pp.reset(_parser.parse(src, &sm, &diag, &consumer));
+	_pp.reset(_parser.parse(*src, sm, &diag, &consumer));
 
 	return finder.getStmt();
 }
@@ -246,43 +252,100 @@ void printGV(const llvm::Function *F, const llvm::GenericValue &AV, string type)
 	assert(0 && "Unknown return type!");
 }
 
-
-void Console::process(const char * line)
+string Console::genAppendix(const char *line, string * fName, string * retType,
+                            std::vector<CodeLine> * moreLines)
 {
-	LineType type;
+	bool wasExpr = false;
+	string appendix;
+	string funcBody;
+	string src = genSource("");
+	clang::SourceManager sm;
 
 	while (isspace(*line)) line++;
 
-	if (*line == '#') {
-		type = PrprLine;
-	} else {
-		type = StmtLine;
-	}
+	*retType = "void";
 
-	string src = genSource();
-	string ret_type = "void";
-	if (const clang::Stmt *S = lineToStmt(src, line)) {
+	if (*line == '#') {
+		moreLines->push_back(CodeLine(line, PrprLine));
+	} else if (const clang::Stmt *S = lineToStmt(line, &sm, &src)) {
 		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
-			getExprType(E, &ret_type);
+			getExprType(E, retType);
+			funcBody = line;
+			moreLines->push_back(CodeLine(line, StmtLine));
+			wasExpr = true;
 		} else if (const clang::DeclStmt *DS = dyn_cast<clang::DeclStmt>(S)) {
-			type = DeclLine;
+			bool initializers = false;
+			for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
+			     E = DS->decl_end(); D != E; ++D) {
+				if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
+					if (VD->getInit()) {
+						initializers = true;
+					}
+				}
+			}
+			if (initializers) {
+				std::vector<string> decls;
+				std::vector<string> stmts;
+				for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
+				     E = DS->decl_end(); D != E; ++D) {
+					if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
+						std::stringstream decl;
+						decl << VD->getType().getAsString() << " "
+						     << VD->getNameAsCString() << ";";
+						decls.push_back(decl.str());
+						if (const clang::Expr *I = VD->getInit()) {
+							clang::SourceLocation SLoc = I->getLocStart();
+							clang::SourceLocation ELoc = I->getLocEnd();
+							unsigned start = sm.getFullFilePos(SLoc);
+							unsigned end   = sm.getFullFilePos(ELoc);
+							end += clang::Lexer::MeasureTokenLength(ELoc, sm);
+							std::stringstream stmt;
+							stmt << VD->getNameAsCString() << " = "
+							     << src.substr(start, end - start) << ";";
+							stmts.push_back(stmt.str());
+						}
+					}
+				}
+				for (unsigned i = 0; i < decls.size(); ++i) {
+					moreLines->push_back(CodeLine(decls[i], DeclLine));
+					appendix += decls[i] + "\n";
+				}
+				for (unsigned i = 0; i < stmts.size(); ++i) {
+					moreLines->push_back(CodeLine(stmts[i], StmtLine));
+					funcBody += stmts[i] + "\n";
+				}
+			} else {
+				moreLines->push_back(CodeLine(line, DeclLine));
+				appendix += line;
+				appendix += "\n";
+			}
 		}
 	}
 
-	string fname;
-	if (type == StmtLine) {
+	if (!funcBody.empty()) {
 		int funcNo = 0;
 		for (unsigned i = 0; i < _lines.size(); ++i)
 			funcNo += (_lines[i].second == StmtLine);
-		fname = "__ccons_anon" + to_string(funcNo);
-		string func = genFunc(line, fname, ret_type);
-		src += func;
-	} else if (type == DeclLine) {
-		src += line;
-		src += "\n";
+		*fName = "__ccons_anon" + to_string(funcNo);
+		appendix += genFunc(funcBody, *fName, *retType);
 	}
 
-	_lines.push_back(make_pair(string(line), type));
+	if (!wasExpr)
+		retType->clear();
+
+	return appendix;
+}
+
+void Console::process(const char * line)
+{
+	string fName;
+	string retType;
+	std::vector<CodeLine> linesToAppend;
+	string appendix = genAppendix(line, &fName, &retType, &linesToAppend);
+	string src = genSource(appendix);
+
+	for (unsigned i = 0; i < linesToAppend.size(); ++i)
+		_lines.push_back(linesToAppend[i]);
 
 	clang::TextDiagnosticPrinter tdp(llvm::errs());
 	ProxyDiagnosticClient pdc(&tdp);
@@ -301,15 +364,16 @@ void Console::process(const char * line)
 		_linker->LinkInModule(module, &err);
 		std::cout << err;
 		// link it with the existing ones
-		if (type == StmtLine) {
+		if (!fName.empty()) {
 			module = _linker->getModule();
 			if (!_engine)
 				_engine.reset(llvm::ExecutionEngine::create(module));
-			llvm::Function *F = module->getFunction(fname.c_str());
+			llvm::Function *F = module->getFunction(fName.c_str());
 			assert(F && "Function was not found!");
 			std::vector<llvm::GenericValue> params;
 			llvm::GenericValue result = _engine->runFunction(F, params);
-			printGV(F, result, ret_type);
+			if (!retType.empty())
+				printGV(F, result, retType);
 		}
 	}
 
