@@ -1,28 +1,33 @@
 #include <iostream>
-#include <editline/readline.h>
+#include <histedit.h>
 
 #include "Console.h"
 
 using std::string;
 using ccons::Console;
 
-char **ccons_completion(const char *text, int start, int end)
+static Console * cc;
+
+static const char *ccons_prompt(EditLine *e)
 {
-	// TODO call console.complete(...)
-	return NULL;
+	return (cc ? cc->prompt() : "??? ");
 }
 
 int main(const int argc, const char **argv)
 {
-	rl_readline_name = "ccons";
-	rl_attempted_completion_function = ccons_completion;
+	EditLine *e = el_init("ccons", stdin, stdout, stderr);
+	el_set(e, EL_PROMPT, ccons_prompt);
 
 	Console console;
-	char *line = readline(console.prompt());
+	cc = &console;
+	const char *line = el_gets(e, NULL);
 	while (line) {
 		console.process(line);
-		line = readline(console.prompt());
+		// FIXME: el_push() is broken... the second parameter should be const char *
+		el_push(e, const_cast<char*>(console.input()));
+		line = el_gets(e, NULL);
 	}
+	el_end(e);
 
 	return 0;
 }

@@ -98,9 +98,26 @@ Console::~Console()
 {
 }
 
+int parensMatched(std::string buf)
+{
+	int count = 0;
+	for (unsigned i = 0; i < buf.length(); i++) {
+		if (buf[i] == '{')
+			count++;
+		else if (buf[i] == '}')
+			count--;
+	}
+	return count;
+}
+
 const char * Console::prompt() const
 {
 	return _prompt.c_str();
+}
+
+const char * Console::input() const
+{
+	return _input.c_str();
 }
 
 class ProxyDiagnosticClient : public clang::DiagnosticClient {
@@ -139,12 +156,8 @@ string formatForType(string type)
 	formatMap[string("size_t")] = string("%z");
 
 	string format;
-	// we also need a regexp library to parse input before giving it to clang...
-	// for example, #include statements
 	if (!strncmp(type.c_str(), "char [", 5) && type[type.length() - 1] == ']') {
-		// string constants - this is a hack! we should support arrays better with
-		// a special case for arrays of characters... (which we should call our own
-		// smart function to print... that decides if its a string or not)
+		// TODO: this is a giant hack
 		format = "\\\"%s\\\"";
 	} else if (type.length() > 0 && type[type.length() - 1] == '*') {
 		format = "%p";
@@ -187,7 +200,6 @@ clang::Stmt * Console::lineToStmt(std::string line,
                                   clang::SourceManager * sm,
                                   std::string * src)
 {
-	// this may fail... if for ex. the line is an include
 	*src += "void doStuff() {\n";
 	const unsigned pos = src->length();
 	*src += line;
@@ -207,7 +219,8 @@ clang::Stmt * Console::lineToStmt(std::string line,
 bool Console::getExprType(const clang::Expr *E, string *type)
 {
 	bool success = false;
-	string exprType = E->getType().getAsString();
+	const clang::QualType& qt = E->getType(); 
+	string exprType = qt.getAsString();
 	string format = formatForType(exprType);
 	if (!format.empty()) {
 		*type = exprType;
@@ -341,8 +354,32 @@ void Console::process(const char * line)
 	string fName;
 	string retType;
 	std::vector<CodeLine> linesToAppend;
-	string appendix = genAppendix(line, &fName, &retType, &linesToAppend);
-	string src = genSource(appendix);
+	string appendix;
+	string src;
+
+	if (!_buffer.empty()) {
+		_buffer += line;
+		_buffer += "\n";
+		int indent = parensMatched(_buffer);
+		_input = string(indent * 2, ' ');
+		if (indent != 0)
+			return;
+		appendix = _buffer;
+		_buffer.clear();
+		_prompt = ">>> ";
+		_input = "";
+		// insert prototype to lines to append
+	} else {
+		if (*line && line[strlen(line)-2] == '{') {
+			_buffer = line;
+			_buffer += "\n";
+			_prompt = "... ";
+			_input = "  ";
+			return;
+		}
+		appendix = genAppendix(line, &fName, &retType, &linesToAppend);
+	}
+	src = genSource(appendix);
 
 	for (unsigned i = 0; i < linesToAppend.size(); ++i)
 		_lines.push_back(linesToAppend[i]);
