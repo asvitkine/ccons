@@ -25,7 +25,6 @@ set_target_properties(ccons PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -ldl")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti")
 
 set(LIBS ${LIBS} ${CLANG_LIBS} ${LLVM_LIBS})
-set(LIBS ${LIBS} /usr/local/lib/libctemplate.a)
-set(LIBS ${LIBS} /usr/local/lib/libedit.a -lcurses)
+set(LIBS ${LIBS} -ledit -lcurses)
 target_link_libraries(ccons ${LIBS})
 

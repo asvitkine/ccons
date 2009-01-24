@@ -30,6 +30,7 @@ public:
 	virtual ~Console();
 
 	const char * prompt() const;
+	const char * input() const;
 	void process(const char * line);
 
 private:
@@ -57,7 +58,9 @@ private:
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<clang::Preprocessor> _pp;
 	std::vector<CodeLine> _lines;
+	std::string _buffer;
 	std::string _prompt;
+	std::string _input;
 	clang::LangOptions _options;
 	Parser _parser;
 
