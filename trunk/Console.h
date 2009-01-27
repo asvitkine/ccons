@@ -7,20 +7,27 @@
 
 #include <llvm/ADT/OwningPtr.h>
 
-#include "Parser.h"
+#include <clang/Basic/LangOptions.h>
 
 namespace llvm {
-	class Linker;
 	class ExecutionEngine;
+	class Function;
+	class GenericValue;
+	class Linker;
 } // namespace llvm
 
 namespace clang {
-	class Preprocessor;
-	class Stmt;
+	class DeclStmt;
 	class Expr;
+	class Preprocessor;
+	class QualType;
+	class SourceManager;
+	class Stmt;
 } // namespace clang
 
 namespace ccons {
+
+class Parser;
 
 class Console {
 
@@ -31,9 +38,11 @@ public:
 
 	const char * prompt() const;
 	const char * input() const;
-	void process(const char * line);
+	void process(const char *line);
 
 private:
+
+	typedef std::pair<unsigned, unsigned> SrcRange;
 
 	enum LineType {
 		StmtLine,
@@ -43,26 +52,33 @@ private:
 	
 	typedef std::pair<std::string, LineType> CodeLine;
 
+	void Console::printGV(const llvm::Function *F,
+                        const llvm::GenericValue& GV,
+                        const clang::QualType& QT);
+	SrcRange getStmtRange(const clang::Stmt *S, const clang::SourceManager& sm);
+	bool handleDeclStmt(const clang::DeclStmt *DS,
+	                    const std::string& src,
+	                    std::string *appendix,
+	                    std::string *funcBody,
+	                    std::vector<CodeLine> *moreLines,
+	                    const clang::SourceManager& sm);
 	std::string genAppendix(const char *line,
-	                        std::string * fName,
-	                        std::string * retType,
-	                        std::vector<CodeLine> * moreLines);
+	                        std::string *fName,
+	                        clang::QualType& QT,
+	                        std::vector<CodeLine> *moreLines);
 	std::string genSource(std::string appendix);
-	std::string genFunc(std::string line, std::string fname, std::string type);
 	clang::Stmt * lineToStmt(std::string line,
-	                         clang::SourceManager * sm,
-													 std::string * src);
-	bool getExprType(const clang::Expr *E, std::string * type);
+	                         clang::SourceManager *sm,
+	                         std::string *src);
 
+	clang::LangOptions _options;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
-	llvm::OwningPtr<clang::Preprocessor> _pp;
+	llvm::OwningPtr<Parser> _parser;
 	std::vector<CodeLine> _lines;
 	std::string _buffer;
 	std::string _prompt;
 	std::string _input;
-	clang::LangOptions _options;
-	Parser _parser;
 
 };
 

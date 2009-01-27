@@ -5,14 +5,18 @@
 
 #include <llvm/ADT/OwningPtr.h>
 
+#include <clang/AST/TranslationUnit.h>
 #include <clang/Basic/LangOptions.h>
-#include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/FileManager.h>
 
 namespace clang {
 	class ASTConsumer;
+	class ASTContext;
 	class Diagnostic;
 	class Preprocessor;
+	class SourceManager;
+	class TargetInfo;
+	class TranslationUnit;
 } // namespace clang
 
 
@@ -23,18 +27,20 @@ class Parser {
 public:
 
 	explicit Parser(const clang::LangOptions& options);
-	virtual ~Parser();
 
-	clang::Preprocessor * Parser::parse(std::string source,
-	                                    clang::SourceManager* sm,
-	                                    clang::Diagnostic *diag,
-	                                    clang::ASTConsumer *consumer);
+	void parse(std::string source,
+						 clang::SourceManager *sm,
+	           clang::Diagnostic *diag,
+	           clang::ASTConsumer *consumer);
 
 private:
 
 	const clang::LangOptions& _options;
-	llvm::OwningPtr<clang::TargetInfo> _target;
 	clang::FileManager _fm;
+	llvm::OwningPtr<clang::TargetInfo> _target;
+	llvm::OwningPtr<clang::Preprocessor> _pp;
+	llvm::OwningPtr<clang::TranslationUnit> _tu;
+	llvm::OwningPtr<clang::ASTContext> _ast;
 
 };
 

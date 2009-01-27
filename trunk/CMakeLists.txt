@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 set(LLVM_NO_RTTI 1)
 
-find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config PATHS /opt/local/bin)
+find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config PATHS ../../Debug/bin/)
 if(NOT LLVM_CONFIG_EXECUTABLE)
   message(FATAL_ERROR "LLVM was not found!")
 endif(NOT LLVM_CONFIG_EXECUTABLE)
@@ -15,7 +15,7 @@ set(CLANG_LIBS "-lclangDriver -lclangAST -lclangLex -lclangCodeGen -lclangSema -
 
 Project(ccons)
 
-add_executable(ccons ccons.cpp Console.cpp Parser.cpp)
+add_executable(ccons ccons.cpp Console.cpp Parser.cpp SrcGen.cpp)
 
 include_directories(${LLVM_INCLUDE_DIR})
 include_directories(../../include/)

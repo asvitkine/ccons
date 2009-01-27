@@ -17,10 +17,15 @@
 #include <clang/AST/AST.h>
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/SourceManager.h>
+#include <clang/Basic/TargetInfo.h>
+#include <clang/Basic/DiagnosticSema.h>
 #include <clang/Driver/CompileOptions.h>
 #include <clang/Driver/TextDiagnosticPrinter.h>
 #include <clang/CodeGen/ModuleBuilder.h>
 #include <clang/Lex/Preprocessor.h>
+
+#include "Parser.h"
+#include "SrcGen.h"
 
 
 template<typename T>
@@ -53,7 +58,7 @@ public:
 
 	void VisitStmt(clang::Stmt *S) {
 		clang::SourceLocation Loc = S->getLocStart();
-		if (Loc.isFileID() && _sm.getFullFilePos(Loc) == _pos) {
+		if (_sm.getFileOffset(_sm.getInstantiationLoc(Loc)) == _pos) {
 			_S = S;
 		}
 	}
@@ -88,7 +93,6 @@ private:
 
 
 Console::Console() :
-	_parser(_options),
 	_prompt(">>> ")
 {
 	_options.C99 = true;
@@ -96,6 +100,8 @@ Console::Console() :
 
 Console::~Console()
 {
+	if (_linker)
+		_linker->releaseModule();
 }
 
 int parensMatched(std::string buf)
@@ -138,36 +144,6 @@ private:
 	clang::DiagnosticClient *_DC;
 };
 
-string formatForType(string type)
-{
-	std::map<string, string> formatMap;
-	formatMap[string("char")] = string("'%c'"); // or %hii if its not printable?
-	formatMap[string("short")] = string("%hi");
-	formatMap[string("unsigned short")] = string("%hu");
-	formatMap[string("int")] = string("%i");
-	formatMap[string("unsigned int")] = string("%u");
-	formatMap[string("long")] = string("%li");
-	formatMap[string("unsigned long")] = string("%lu");
-	formatMap[string("long long")] = string("%lli");
-	formatMap[string("unsigned long long")] = string("%llu");
-	formatMap[string("float")] = string("%f");
-	formatMap[string("double")] = string("%lf");
-	formatMap[string("long double")] = string("%Lf");
-	formatMap[string("size_t")] = string("%z");
-
-	string format;
-	if (!strncmp(type.c_str(), "char [", 5) && type[type.length() - 1] == ']') {
-		// TODO: this is a giant hack
-		format = "\\\"%s\\\"";
-	} else if (type.length() > 0 && type[type.length() - 1] == '*') {
-		format = "%p";
-	} else if (formatMap.find(type) != formatMap.end()) {
-		format = formatMap[type];
-	}
-
-	return format;
-}
-
 string Console::genSource(string appendix)
 {
 	string src;
@@ -185,22 +161,11 @@ string Console::genSource(string appendix)
 	return src;
 }
 
-string Console::genFunc(string line, string fname, string type)
-{
-	string func;
-	func += type + " " + fname + "(void) {\n";
-	if (type != "void")
-		func += "return ";
-	func += line;
-	func += "\n}\n";
-	return func;
-}
-
 clang::Stmt * Console::lineToStmt(std::string line,
-                                  clang::SourceManager * sm,
-                                  std::string * src)
+                                  clang::SourceManager *sm,
+                                  std::string *src)
 {
-	*src += "void doStuff() {\n";
+	*src += "void __ccons_temp() {\n";
 	const unsigned pos = src->length();
 	*src += line;
 	*src += "\n}\n";
@@ -211,62 +176,105 @@ clang::Stmt * Console::lineToStmt(std::string line,
 
 	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer consumer(&finder);
-	_pp.reset(_parser.parse(*src, sm, &diag, &consumer));
+	_parser.reset(new Parser(_options));
+	_parser->parse(*src, sm, &diag, &consumer);
 
 	return finder.getStmt();
 }
 
-bool Console::getExprType(const clang::Expr *E, string *type)
+void Console::printGV(const llvm::Function *F,
+                      const llvm::GenericValue& GV,
+                      const clang::QualType& QT)
 {
-	bool success = false;
-	const clang::QualType& qt = E->getType(); 
-	string exprType = qt.getAsString();
-	string format = formatForType(exprType);
-	if (!format.empty()) {
-		*type = exprType;
-		if (format == "\\\"%s\\\"") {
-			*type = "char *";
-		}
-		success = true;
-	}
-	return success;
-}
-
-void printGV(const llvm::Function *F, const llvm::GenericValue &AV, string type)
-{
-	string format = formatForType(type);
-	if (format.empty()) {
-		std::cout << "=> (" << type << ")\n";
-		return;
-	}
-
+	string type = QT.getAsString();
 	const llvm::FunctionType *FTy = F->getFunctionType();
 	const llvm::Type *RetTy = FTy->getReturnType();
 	switch (RetTy->getTypeID()) {
 		case llvm::Type::IntegerTyID:
-			printf(("=> (" + type + ") %lu\n").c_str(), AV.IntVal.getZExtValue());
+			if (QT->isUnsignedIntegerType())
+				printf(("=> (" + type + ") %lu\n").c_str(), GV.IntVal.getZExtValue());
+			else
+				printf(("=> (" + type + ") %ld\n").c_str(), GV.IntVal.getZExtValue());
 			return;
 		case llvm::Type::FloatTyID:
-			printf(("=> (" + type + ") %f\n").c_str(), AV.FloatVal);
+			printf(("=> (" + type + ") %f\n").c_str(), GV.FloatVal);
 			return;
 		case llvm::Type::DoubleTyID:
-			printf(("=> (" + type + ") %lf\n").c_str(), AV.DoubleVal);
+			printf(("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
 			return;
 		case llvm::Type::PointerTyID:
-			void *p = GVTOP(AV);
-			if (p && type == "char *")
+			void *p = GVTOP(GV);
+			// FIXME: this is a hack
+			if (p && !strncmp(type.c_str(), "char", 4))
 				printf(("=> (" + type + ") \"%s\"\n").c_str(), p);
 			else
 				printf(("=> (" + type + ") %p\n").c_str(), p);
 			return;
-		default: break;
+		default:
+			break;
 	}
 
 	assert(0 && "Unknown return type!");
 }
 
-string Console::genAppendix(const char *line, string * fName, string * retType,
-                            std::vector<CodeLine> * moreLines)
+Console::SrcRange Console::getStmtRange(const clang::Stmt *S,
+                                        const clang::SourceManager& sm)
+{
+	clang::SourceLocation SLoc = sm.getInstantiationLoc(S->getLocStart());
+	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
+	unsigned start = sm.getFileOffset(SLoc);
+	unsigned end   = sm.getFileOffset(ELoc);
+	end += clang::Lexer::MeasureTokenLength(ELoc, sm);
+	return SrcRange(start, end);
+}
+
+bool Console::handleDeclStmt(const clang::DeclStmt *DS,
+                             const string& src,
+                             string *appendix,
+                             string *funcBody,
+                             std::vector<CodeLine> *moreLines,
+                             const clang::SourceManager& sm)
+{
+	bool initializers = false;
+	for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
+			 E = DS->decl_end(); D != E; ++D) {
+		if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
+			if (VD->getInit()) {
+				initializers = true;
+			}
+		}
+	}
+	if (initializers) {
+		std::vector<string> decls;
+		std::vector<string> stmts;
+		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
+				 E = DS->decl_end(); D != E; ++D) {
+			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
+				decls.push_back(genVarDecl(VD->getType(), VD->getNameAsCString()) + ";");
+				if (const clang::Expr *I = VD->getInit()) {
+					SrcRange range = getStmtRange(I, sm);
+					std::stringstream stmt;
+					stmt << VD->getNameAsCString() << " = "
+							 << src.substr(range.first, range.second - range.first) << ";";
+					stmts.push_back(stmt.str());
+				}
+			}
+		}
+		for (unsigned i = 0; i < decls.size(); ++i) {
+			moreLines->push_back(CodeLine(decls[i], DeclLine));
+			*appendix += decls[i] + "\n";
+		}
+		for (unsigned i = 0; i < stmts.size(); ++i) {
+			moreLines->push_back(CodeLine(stmts[i], StmtLine));
+			*funcBody += stmts[i] + "\n";
+		}
+		return true;
+	}
+	return false;
+}
+
+string Console::genAppendix(const char *line, string *fName, clang::QualType& QT,
+                            std::vector<CodeLine> *moreLines)
 {
 	bool wasExpr = false;
 	string appendix;
@@ -276,58 +284,16 @@ string Console::genAppendix(const char *line, string * fName, string * retType,
 
 	while (isspace(*line)) line++;
 
-	*retType = "void";
-
 	if (*line == '#') {
 		moreLines->push_back(CodeLine(line, PrprLine));
 	} else if (const clang::Stmt *S = lineToStmt(line, &sm, &src)) {
 		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
-			getExprType(E, retType);
+			QT = E->getType();
 			funcBody = line;
 			moreLines->push_back(CodeLine(line, StmtLine));
 			wasExpr = true;
 		} else if (const clang::DeclStmt *DS = dyn_cast<clang::DeclStmt>(S)) {
-			bool initializers = false;
-			for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
-			     E = DS->decl_end(); D != E; ++D) {
-				if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
-					if (VD->getInit()) {
-						initializers = true;
-					}
-				}
-			}
-			if (initializers) {
-				std::vector<string> decls;
-				std::vector<string> stmts;
-				for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
-				     E = DS->decl_end(); D != E; ++D) {
-					if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
-						std::stringstream decl;
-						decl << VD->getType().getAsString() << " "
-						     << VD->getNameAsCString() << ";";
-						decls.push_back(decl.str());
-						if (const clang::Expr *I = VD->getInit()) {
-							clang::SourceLocation SLoc = I->getLocStart();
-							clang::SourceLocation ELoc = I->getLocEnd();
-							unsigned start = sm.getFullFilePos(SLoc);
-							unsigned end   = sm.getFullFilePos(ELoc);
-							end += clang::Lexer::MeasureTokenLength(ELoc, sm);
-							std::stringstream stmt;
-							stmt << VD->getNameAsCString() << " = "
-							     << src.substr(start, end - start) << ";";
-							stmts.push_back(stmt.str());
-						}
-					}
-				}
-				for (unsigned i = 0; i < decls.size(); ++i) {
-					moreLines->push_back(CodeLine(decls[i], DeclLine));
-					appendix += decls[i] + "\n";
-				}
-				for (unsigned i = 0; i < stmts.size(); ++i) {
-					moreLines->push_back(CodeLine(stmts[i], StmtLine));
-					funcBody += stmts[i] + "\n";
-				}
-			} else {
+			if (!handleDeclStmt(DS, src, &appendix, &funcBody, moreLines, sm)) {
 				moreLines->push_back(CodeLine(line, DeclLine));
 				appendix += line;
 				appendix += "\n";
@@ -340,19 +306,16 @@ string Console::genAppendix(const char *line, string * fName, string * retType,
 		for (unsigned i = 0; i < _lines.size(); ++i)
 			funcNo += (_lines[i].second == StmtLine);
 		*fName = "__ccons_anon" + to_string(funcNo);
-		appendix += genFunc(funcBody, *fName, *retType);
+		appendix += genFunc(wasExpr ? &QT : NULL, *fName, funcBody);
 	}
-
-	if (!wasExpr)
-		retType->clear();
 
 	return appendix;
 }
 
-void Console::process(const char * line)
+void Console::process(const char *line)
 {
 	string fName;
-	string retType;
+	clang::QualType retType(0, 0);
 	std::vector<CodeLine> linesToAppend;
 	string appendix;
 	string src;
@@ -377,7 +340,7 @@ void Console::process(const char * line)
 			_input = "  ";
 			return;
 		}
-		appendix = genAppendix(line, &fName, &retType, &linesToAppend);
+		appendix = genAppendix(line, &fName, retType, &linesToAppend);
 	}
 	src = genSource(appendix);
 
@@ -392,7 +355,8 @@ void Console::process(const char * line)
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	codegen.reset(CreateLLVMCodeGen(diag, _options, "-", false));
 	clang::SourceManager sm;
-	_pp.reset(_parser.parse(src, &sm, &diag, codegen.get()));
+	Parser p2(_options); // we keep the other parser around because of QT...
+	p2.parse(src, &sm, &diag, codegen.get());
 	llvm::Module *module = codegen->ReleaseModule();
 	if (module) {
 		if (!_linker)
@@ -409,12 +373,12 @@ void Console::process(const char * line)
 			assert(F && "Function was not found!");
 			std::vector<llvm::GenericValue> params;
 			llvm::GenericValue result = _engine->runFunction(F, params);
-			if (!retType.empty())
+			if (retType.getTypePtr())
 				printGV(F, result, retType);
 		}
 	}
 
-	_pp.reset();
+	_parser.reset();
 }
 
 } // namespace ccons
