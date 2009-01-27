@@ -4,6 +4,8 @@
 #include <llvm/Support/MemoryBuffer.h>
 
 #include <clang/AST/ASTConsumer.h>
+#include <clang/AST/TranslationUnit.h>
+#include <clang/Basic/TargetInfo.h>
 #include <clang/Driver/InitHeaderSearch.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Preprocessor.h>
@@ -19,27 +21,30 @@ Parser::Parser(const clang::LangOptions& options) :
 {
 }
 
-Parser::~Parser()
+void Parser::parse(string src,
+                   clang::SourceManager *sm,
+                   clang::Diagnostic *diag,
+                   clang::ASTConsumer *consumer)
 {
-}
-
-clang::Preprocessor * Parser::parse(string source,
-                                    clang::SourceManager *sm,
-                                    clang::Diagnostic *diag,
-                                    clang::ASTConsumer *consumer)
-{
-	llvm::MemoryBuffer *mb = llvm::MemoryBuffer::getMemBufferCopy(&*source.begin(), &*source.end(), "Main");
-	assert(mb);
+	llvm::MemoryBuffer *mb =
+		llvm::MemoryBuffer::getMemBufferCopy(&*src.begin(), &*src.end(), "Main");
+	assert(mb && "Error creating MemoryBuffer!");
 	sm->createMainFileIDForMemBuffer(mb);
-	assert(!sm->getMainFileID().isInvalid());
+	assert(!sm->getMainFileID().isInvalid() && "Error creating MainFileID!");
+
 	clang::HeaderSearch headers(_fm);
 	clang::InitHeaderSearch ihs(headers);
 	ihs.AddDefaultEnvVarPaths(_options);
 	ihs.AddDefaultSystemIncludePaths(_options);
 	ihs.Realize();
-	clang::Preprocessor *pp = new clang::Preprocessor(*diag, _options, *_target, *sm, headers, NULL);
-	clang::ParseAST(*pp, consumer, /* PrintStats = */ false, /* FreeMemory = */ false);
-	return pp;
+
+	clang::Preprocessor *pp =
+		new clang::Preprocessor(*diag, _options, *_target, *sm, headers);
+	_ast.reset(new clang::ASTContext(_options, *sm, *_target,
+		pp->getIdentifierTable(), pp->getSelectorTable()));
+	_tu.reset(new clang::TranslationUnit(*_ast));
+
+	clang::ParseAST(*pp, consumer, _ast.get(), _tu.get());
 }
 
 } // namespace ccons
