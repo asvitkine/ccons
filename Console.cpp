@@ -202,7 +202,7 @@ void Console::printGV(const llvm::Function *F,
 		case llvm::Type::DoubleTyID:
 			printf(("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
 			return;
-		case llvm::Type::PointerTyID:
+		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
 			// FIXME: this is a hack
 			if (p && !strncmp(type.c_str(), "char", 4))
@@ -210,6 +210,7 @@ void Console::printGV(const llvm::Function *F,
 			else
 				printf(("=> (" + type + ") %p\n").c_str(), p);
 			return;
+		}
 		default:
 			break;
 	}

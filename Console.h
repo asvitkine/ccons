@@ -52,9 +52,9 @@ private:
 	
 	typedef std::pair<std::string, LineType> CodeLine;
 
-	void Console::printGV(const llvm::Function *F,
-                        const llvm::GenericValue& GV,
-                        const clang::QualType& QT);
+	void printGV(const llvm::Function *F,
+                     const llvm::GenericValue& GV,
+                     const clang::QualType& QT);
 	SrcRange getStmtRange(const clang::Stmt *S, const clang::SourceManager& sm);
 	bool handleDeclStmt(const clang::DeclStmt *DS,
 	                    const std::string& src,
