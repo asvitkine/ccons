@@ -11,9 +11,11 @@ proc check {input output} {
 }
 
 spawn ../../ccons
+send "unsigned j;\n"
 send "int i = 0;\n"
 check "i = 5;"        "=> (int) 5"
 check "i*i;"          "=> (int) 25"
 check "i-1;"          "=> (int) 4"
 check "i+=i<<2;"      "=> (int) 25"
 check "i - 100;"      "=> (int) -75"
+check "j = 0-1;"      "=> (unsigned int) 4294967295"
