@@ -11,8 +11,8 @@ proc check {input output} {
 }
 
 spawn ../../ccons
-send "#include <stdio.h>\n"
-send "int (*p)(char const *restrict, ...);\n"
-send "p = printf;\n"
-check "p == printf;"  "=> (int) 1"
-check "p != printf;"  "=> (int) 0"
+send "#define XYZ 123\n"
+check "XYZ;" "=> (int) 123"
+send "#undef XYZ\n"
+send "#define XYZ 100\n"
+check "XYZ;" "=> (int) 100"
