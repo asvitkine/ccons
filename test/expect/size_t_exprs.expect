@@ -1,0 +1,20 @@
+#!/usr/bin/expect -f
+log_user 0
+set timeout 2
+
+proc check {input output} {
+    send "$input\n"
+    expect timeout {
+	send_user "Failed: input \"$input\" did not result in \"$output\" \n"
+	exit
+    } "$output"
+}
+
+spawn ../../ccons
+send "#include<stdio.h>\n"
+send "size_t x = 1;\n"
+send "size_t y = 4294967295;\n"
+send "size_t z;\n"
+check "x;"            "=> (size_t) 1"
+check "y;"            "=> (size_t) 4294967295"
+check "z = x + y;"    "=> (size_t) 0"
