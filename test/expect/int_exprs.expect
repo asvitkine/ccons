@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 log_user 0
-set timeout 1
+set timeout 2
 
 proc check {input output} {
     send "$input\n"
