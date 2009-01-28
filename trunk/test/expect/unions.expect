@@ -1,0 +1,16 @@
+#!/usr/bin/expect -f
+log_user 0
+set timeout 2
+
+proc check {input output} {
+    send "$input\n"
+    expect timeout {
+	send_user "Failed: input \"$input\" did not result in \"$output\" \n"
+	exit
+    } "$output"
+}
+
+spawn ../../ccons
+send "union { int a; void *b; } x;\n"
+check "x.a = 1;" "=> (int) 1"
+check "x.b;"     "=> (void *) 0x1"
