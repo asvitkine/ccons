@@ -44,7 +44,7 @@ void Parser::parse(string src,
 		pp->getIdentifierTable(), pp->getSelectorTable()));
 	_tu.reset(new clang::TranslationUnit(*_ast));
 
-	clang::ParseAST(*pp, consumer, _ast.get(), _tu.get());
+	clang::ParseAST(*pp, consumer, _tu.get());
 }
 
 } // namespace ccons
