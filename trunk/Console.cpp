@@ -170,7 +170,8 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	*src += line;
 	*src += "\n}\n";
 
-	ProxyDiagnosticClient pdc(NULL);
+	clang::TextDiagnosticPrinter tdp(llvm::errs());
+	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
 	diag.setSuppressSystemWarnings(true);
 
