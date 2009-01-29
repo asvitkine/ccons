@@ -337,6 +337,12 @@ void Console::process(const char *line)
 		_prompt = ">>> ";
 		_input = "";
 		// insert prototype to lines to append
+		std::istringstream iss;
+		iss.str(appendix);
+		string decl;
+		getline(iss, decl);
+		decl = decl.substr(0, decl.length() - 2) + ";";
+		linesToAppend.push_back(CodeLine(decl, DeclLine));
 	} else {
 		if (*line && line[strlen(line)-2] == '{') {
 			_buffer = line;
