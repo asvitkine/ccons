@@ -18,11 +18,12 @@
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Basic/TargetInfo.h>
-#include <clang/Basic/DiagnosticSema.h>
+#include <clang/Basic/Diagnostic.h>
 #include <clang/Driver/CompileOptions.h>
 #include <clang/Driver/TextDiagnosticPrinter.h>
 #include <clang/CodeGen/ModuleBuilder.h>
 #include <clang/Lex/Preprocessor.h>
+#include <clang/Sema/SemaDiagnostic.h>
 
 #include "Parser.h"
 #include "SrcGen.h"
@@ -173,6 +174,8 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	clang::TextDiagnosticPrinter tdp(llvm::errs());
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
+	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
+	                          clang::diag::MAP_WARNING);
 	diag.setSuppressSystemWarnings(true);
 
 	StmtFinder finder(pos, *sm);
@@ -352,6 +355,8 @@ void Console::process(const char *line)
 	clang::TextDiagnosticPrinter tdp(llvm::errs());
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
+	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
+	                          clang::diag::MAP_WARNING);
 	diag.setSuppressSystemWarnings(true);
 
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
