@@ -13,3 +13,5 @@ proc check {input output} {
 spawn ../../ccons
 send "#include <math.h>\n"
 check "pow(2.0, 4.0);" "=> (double) 16.0"
+check "strcmp(\"abc\", \"def\");" \
+      "warning: implicit declaration of function 'strcmp'"
