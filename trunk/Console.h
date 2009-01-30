@@ -65,7 +65,8 @@ private:
 	std::string genAppendix(const char *line,
 	                        std::string *fName,
 	                        clang::QualType& QT,
-	                        std::vector<CodeLine> *moreLines);
+	                        std::vector<CodeLine> *moreLines,
+	                        bool *hadErrors);
 	std::string genSource(std::string appendix);
 	clang::Stmt * lineToStmt(std::string line,
 	                         clang::SourceManager *sm,
