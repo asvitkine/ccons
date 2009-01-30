@@ -130,19 +130,27 @@ const char * Console::input() const
 class ProxyDiagnosticClient : public clang::DiagnosticClient {
 public:
 
-	ProxyDiagnosticClient(clang::DiagnosticClient *DC) : _DC(DC) {}
+	ProxyDiagnosticClient(clang::DiagnosticClient *DC)
+		: _DC(DC), _hadErrors(false) {}
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
 	                      const clang::DiagnosticInfo &Info) {
-		if (!_DC) return;
+		if (!_DC || _hadErrors) return;
 		if (Info.getID() != clang::diag::warn_unused_expr &&
 		    Info.getID() != clang::diag::pp_macro_not_used)
 			_DC->HandleDiagnostic(DiagLevel, Info);
+		if (DiagLevel == clang::Diagnostic::Error)
+			_hadErrors = true;
+	}
+
+	bool hadErrors() {
+		return _hadErrors;
 	}
 
 private:
 
 	clang::DiagnosticClient *_DC;
+	bool _hadErrors;
 };
 
 string Console::genSource(string appendix)
@@ -171,17 +179,22 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	*src += line;
 	*src += "\n}\n";
 
-	clang::TextDiagnosticPrinter tdp(llvm::errs());
+	clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
 	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
-	                          clang::diag::MAP_WARNING);
+	                          clang::diag::MAP_ERROR);
 	diag.setSuppressSystemWarnings(true);
 
 	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer consumer(&finder);
 	_parser.reset(new Parser(_options));
 	_parser->parse(*src, sm, &diag, &consumer);
+
+	if (pdc.hadErrors()) {
+		src->clear();
+		return NULL;
+	}
 
 	return finder.getStmt();
 }
@@ -278,8 +291,11 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 	return false;
 }
 
-string Console::genAppendix(const char *line, string *fName, clang::QualType& QT,
-                            std::vector<CodeLine> *moreLines)
+string Console::genAppendix(const char *line,
+                            string *fName,
+                            clang::QualType& QT,
+                            std::vector<CodeLine> *moreLines,
+                            bool *hadErrors)
 {
 	bool wasExpr = false;
 	string appendix;
@@ -289,6 +305,7 @@ string Console::genAppendix(const char *line, string *fName, clang::QualType& QT
 
 	while (isspace(*line)) line++;
 
+	*hadErrors = false;
 	if (*line == '#') {
 		moreLines->push_back(CodeLine(line, PrprLine));
 	} else if (const clang::Stmt *S = lineToStmt(line, &sm, &src)) {
@@ -304,6 +321,9 @@ string Console::genAppendix(const char *line, string *fName, clang::QualType& QT
 				appendix += "\n";
 			}
 		}
+	} else if (src.empty()) {
+		std::cout << "\nNote: Last line ignored due to errors.\n";
+		*hadErrors = true;
 	}
 
 	if (!funcBody.empty()) {
@@ -322,6 +342,7 @@ void Console::process(const char *line)
 	string fName;
 	clang::QualType retType(0, 0);
 	std::vector<CodeLine> linesToAppend;
+	bool hadErrors;
 	string appendix;
 	string src;
 
@@ -351,18 +372,22 @@ void Console::process(const char *line)
 			_input = "  ";
 			return;
 		}
-		appendix = genAppendix(line, &fName, retType, &linesToAppend);
+		appendix = genAppendix(line, &fName, retType, &linesToAppend, &hadErrors);
 	}
+
+	if (hadErrors)
+		return;
+
 	src = genSource(appendix);
 
 	for (unsigned i = 0; i < linesToAppend.size(); ++i)
 		_lines.push_back(linesToAppend[i]);
 
-	clang::TextDiagnosticPrinter tdp(llvm::errs());
+	clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
 	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
-	                          clang::diag::MAP_WARNING);
+	                          clang::diag::MAP_ERROR);
 	diag.setSuppressSystemWarnings(true);
 
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
