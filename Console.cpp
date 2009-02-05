@@ -97,6 +97,8 @@ Console::Console() :
 	_prompt(">>> ")
 {
 	_options.C99 = true;
+	// Declare exit() so users may call it without needing to #include <stdio.h>
+	_lines.push_back(CodeLine("void exit(int status);", DeclLine));
 }
 
 Console::~Console()
