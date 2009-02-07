@@ -5,10 +5,10 @@ set timeout 2
 proc check {input output} {
     send "$input\n"
     expect timeout {
-	send_user "Failed: input \"$input\" did not result in \"$output\" \n"
+	send_user "Failed: input |$input| did not result in |$output| \n"
 	exit
     } "$output"
 }
 
 spawn ../../ccons
-check "\"Hello World!\";" "=> (char \[13\]) \"Hello World!\""
+check {"Hello World!";} {=> (char \[13\]) "Hello World!"}
