@@ -11,4 +11,4 @@ proc check {input output} {
 }
 
 spawn ../../ccons
-check "\"Hello World!\";" "=> (char [13]) \"Hello World!\""
+check "\"Hello World!\";" "=> (char \[13\]) \"Hello World!\""
