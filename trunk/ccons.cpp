@@ -1,5 +1,5 @@
 #include <iostream>
-#include <editline/readline.h>
+#include <limits.h>
 #include <histedit.h>
 
 #include "Console.h"
