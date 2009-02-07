@@ -277,6 +277,9 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 					//       place it in the global context because the parameters may
 					//       be function calls or other non-constants). Thus it has to
 					//       be split into array[0] = 'a'; array[1] = 'b'; .. etc. :(
+					// TODO: if it's a StringLiteral, like char x[5] = "Food";
+					//       then we can keep just place it completely in the global
+					//       scope with the initializer...
 					SrcRange range = getStmtRange(I, sm);
 					std::stringstream stmt;
 					stmt << VD->getNameAsCString() << " = "
