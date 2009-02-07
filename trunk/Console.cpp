@@ -272,6 +272,11 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
 				decls.push_back(genVarDecl(VD->getType(), VD->getNameAsCString()) + ";");
 				if (const clang::Expr *I = VD->getInit()) {
+					// TODO: if it's an InitListExpr like {'a','b','c'}, then it's not
+					//       allowed to exist in a normal initializer... (and we can't
+					//       place it in the global context because the parameters may
+					//       be function calls or other non-constants). Thus it has to
+					//       be split into array[0] = 'a'; array[1] = 'b'; .. etc. :(
 					SrcRange range = getStmtRange(I, sm);
 					std::stringstream stmt;
 					stmt << VD->getNameAsCString() << " = "
