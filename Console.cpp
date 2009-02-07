@@ -333,7 +333,7 @@ string Console::genAppendix(const char *line,
 		for (unsigned i = 0; i < _lines.size(); ++i)
 			funcNo += (_lines[i].second == StmtLine);
 		*fName = "__ccons_anon" + to_string(funcNo);
-		appendix += genFunc(wasExpr ? &QT : NULL, *fName, funcBody);
+		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody);
 	}
 
 	return appendix;

@@ -4,6 +4,7 @@
 #include <string>
 
 namespace clang {
+	class ASTContext;
 	class QualType;
 } // namespace clang
 
@@ -13,6 +14,7 @@ class Parser;
 
 std::string genVarDecl(const clang::QualType& type, const std::string& vName);
 std::string genFunc(const clang::QualType *retType,
+                    clang::ASTContext *context,
                     const std::string& fName,
                     const std::string& fBody);
 

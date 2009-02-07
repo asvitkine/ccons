@@ -33,6 +33,8 @@ public:
 	           clang::Diagnostic *diag,
 	           clang::ASTConsumer *consumer);
 
+  clang::ASTContext * getContext() const;
+
 private:
 
 	const clang::LangOptions& _options;
