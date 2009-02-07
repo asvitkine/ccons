@@ -15,13 +15,16 @@ string genVarDecl(const clang::QualType& type, const string& vName) {
 	return str;
 }
 
-std::string genFunc(const clang::QualType *retType,
-                    const string& fName,
-                    const string& fBody)
+string genFunc(const clang::QualType *retType,
+               clang::ASTContext *context,
+               const string& fName,
+               const string& fBody)
 {
 	string func;
 	if (!retType) {
 		func = "void " + fName + "(void){\n";
+	} else if ((*retType)->isArrayType()) {
+		func = genVarDecl(context->getArrayDecayedType(*retType), fName + "(void)") + "{\nreturn ";
 	} else {
 		func = genVarDecl(*retType, fName + "(void)") + "{\nreturn ";
 	}

@@ -21,6 +21,11 @@ Parser::Parser(const clang::LangOptions& options) :
 {
 }
 
+clang::ASTContext * Parser::getContext() const
+{
+	return _ast.get();
+}
+
 void Parser::parse(string src,
                    clang::SourceManager *sm,
                    clang::Diagnostic *diag,
