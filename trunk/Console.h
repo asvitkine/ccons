@@ -49,12 +49,12 @@ private:
 		DeclLine,
 		PrprLine,
 	};
-	
+
 	typedef std::pair<std::string, LineType> CodeLine;
 
 	void printGV(const llvm::Function *F,
-                     const llvm::GenericValue& GV,
-                     const clang::QualType& QT);
+	             const llvm::GenericValue& GV,
+	             const clang::QualType& QT);
 	SrcRange getStmtRange(const clang::Stmt *S, const clang::SourceManager& sm);
 	bool handleDeclStmt(const clang::DeclStmt *DS,
 	                    const std::string& src,

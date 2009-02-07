@@ -37,14 +37,13 @@ void Parser::parse(string src,
 	ihs.AddDefaultEnvVarPaths(_options);
 	ihs.AddDefaultSystemIncludePaths(_options);
 	ihs.Realize();
-
-	clang::Preprocessor *pp =
-		new clang::Preprocessor(*diag, _options, *_target, *sm, headers);
+		
+	_pp.reset(new clang::Preprocessor(*diag, _options, *_target, *sm, headers));
 	_ast.reset(new clang::ASTContext(_options, *sm, *_target,
-		pp->getIdentifierTable(), pp->getSelectorTable()));
+		_pp->getIdentifierTable(), _pp->getSelectorTable()));
 	_tu.reset(new clang::TranslationUnit(*_ast));
 
-	clang::ParseAST(*pp, consumer, _tu.get());
+	clang::ParseAST(*_pp, consumer, _tu.get());
 }
 
 } // namespace ccons
