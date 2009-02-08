@@ -12,4 +12,4 @@ proc check {input output} {
 
 spawn ../../ccons
 send "int x\[3\] = {1, 2, 3};\n"
-check "x\[0\];" "=> (int) 1"
+check {x\[0\];} {=> (int) 1}
