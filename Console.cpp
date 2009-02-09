@@ -269,28 +269,33 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 				 E = DS->decl_end(); D != E; ++D) {
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
-				decls.push_back(genVarDecl(VD->getType(), VD->getNameAsCString()) + ";");
+				string decl = genVarDecl(VD->getType(), VD->getNameAsCString());
 				if (const clang::Expr *I = VD->getInit()) {
-					// TODO: if it's an InitListExpr like {'a','b','c'}, then it's not
-					//       allowed to exist in a normal initializer... (and we can't
-					//       place it in the global context because the parameters may
-					//       be function calls or other non-constants). Thus it has to
-					//       be split into array[0] = 'a'; array[1] = 'b'; .. etc. :(
-					// TODO: if it's a StringLiteral, like char x[5] = "Food";
-					//       then we can keep just place it completely in the global
-					//       scope with the initializer...
 					SrcRange range = getStmtRange(I, sm);
-					std::stringstream stmt;
-					stmt << VD->getNameAsCString() << " = "
-							 << src.substr(range.first, range.second - range.first) << ";";
-					stmts.push_back(stmt.str());
+					if (I->isConstantInitializer(*_parser->getContext())) {
+						// Keep the whole thing in the global context.
+						std::stringstream global;
+						global << decl << " = ";
+						global << src.substr(range.first, range.second - range.first);
+						*appendix += global.str() + ";\n";
+					} else {
+						// TODO: if it's an InitListExpr like {'a','b','c'}, then it's not
+						//       allowed to exist in a normal initializer... (and we can't
+						//       just place it in the global context since the params may
+						//       be function calls or other non-constants). Thus it has to
+						//       be split into array[0] = 'a'; array[1] = 'b'; .. etc. :(
+						std::stringstream stmt;
+						stmt << VD->getNameAsCString() << " = "
+						     << src.substr(range.first, range.second - range.first) << ";";
+						stmts.push_back(stmt.str());
+						*appendix += decl + ";\n";
+					}
 				}
+				decls.push_back(decl + ";");
 			}
 		}
-		for (unsigned i = 0; i < decls.size(); ++i) {
+		for (unsigned i = 0; i < decls.size(); ++i)
 			moreLines->push_back(CodeLine("extern " + decls[i], DeclLine));
-			*appendix += decls[i] + "\n";
-		}
 		for (unsigned i = 0; i < stmts.size(); ++i) {
 			moreLines->push_back(CodeLine(stmts[i], StmtLine));
 			*funcBody += stmts[i] + "\n";
