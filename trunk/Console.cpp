@@ -163,7 +163,6 @@ string Console::genSource(string appendix)
 			src += _lines[i].first;
 			src += "\n";
 		} else if (_lines[i].second == DeclLine) {
-			src += "extern ";
 			src += _lines[i].first;
 			src += "\n";
 		}
@@ -289,7 +288,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 			}
 		}
 		for (unsigned i = 0; i < decls.size(); ++i) {
-			moreLines->push_back(CodeLine(decls[i], DeclLine));
+			moreLines->push_back(CodeLine("extern " + decls[i], DeclLine));
 			*appendix += decls[i] + "\n";
 		}
 		for (unsigned i = 0; i < stmts.size(); ++i) {
