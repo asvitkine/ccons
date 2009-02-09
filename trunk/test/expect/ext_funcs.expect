@@ -11,7 +11,15 @@ proc check {input output} {
 }
 
 spawn ../../ccons
+
+send "extern double fabs(double x);\n"
+check "fabs(-2.5);" "=> (double) 2.5"
+
+send "float fabsf(float x);\n"
+check "fabsf(-2.5f);" "=> (float) 2.5"
+
 send "#include <math.h>\n"
 check "pow(2.0, 4.0);" "=> (double) 16.0"
+
 check "strcmp(\"abc\", \"def\");" \
       "error: implicit declaration of function 'strcmp'"
