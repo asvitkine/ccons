@@ -24,9 +24,20 @@ string genFunc(const clang::QualType *retType,
 	if (!retType) {
 		func = "void " + fName + "(void){\n";
 	} else if ((*retType)->isArrayType()) {
+		// TODO: What about arrays of anonymous types?
 		func = genVarDecl(context->getArrayDecayedType(*retType), fName + "(void)") + "{\nreturn ";
 	} else {
-		func = genVarDecl(*retType, fName + "(void)") + "{\nreturn ";
+		string decl = genVarDecl(*retType, fName + "(void)");
+		// TODO: check for anonymous struct a better way
+		if (decl.find("struct <anonymous>") != string::npos) {
+			if ((*retType)->isPointerType()) {
+				func = "void *" + fName + "(void){\nreturn ";
+			} else {
+				func = "void " + fName + "(void){\n";
+			}
+		} else {
+			func = decl + "{\nreturn ";
+		}
 	}
 	func += fBody;
 	func += "\n}\n";
