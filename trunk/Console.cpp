@@ -229,6 +229,8 @@ void Console::printGV(const llvm::Function *F,
 				printf(("=> (" + type + ") %p\n").c_str(), p);
 			return;
 		}
+		case llvm::Type::VoidTyID:
+			return;
 		default:
 			break;
 	}
