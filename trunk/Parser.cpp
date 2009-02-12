@@ -95,7 +95,7 @@ bool Parser::analyzeInput(const string& buffer, int& indentLevel)
 	//       if (X)
 	//         Y;
 
-	if (LastTok.is(clang::tok::semi) || LastTok.is(clang::tok::r_square))
+	if (LastTok.is(clang::tok::semi) || LastTok.is(clang::tok::r_brace))
 		return S.empty();
 
 	return false;
