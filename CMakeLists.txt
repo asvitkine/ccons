@@ -15,7 +15,7 @@ set(CLANG_LIBS "-lclangDriver -lclangAST -lclangLex -lclangCodeGen -lclangSema -
 
 Project(ccons)
 
-add_executable(ccons ccons.cpp ClangUtils.cpp Console.cpp Parser.cpp SrcGen.cpp)
+add_executable(ccons ccons.cpp ClangUtils.cpp Console.cpp Parser.cpp SrcGen.cpp EditLineReader.cpp)
 
 include_directories(${LLVM_INCLUDE_DIR})
 include_directories(../../include/)
