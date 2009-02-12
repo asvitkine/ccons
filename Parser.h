@@ -28,7 +28,8 @@ public:
 
 	explicit Parser(const clang::LangOptions& options);
 
-	void parse(std::string source,
+  bool analyzeInput(const std::string& buffer, int& indentLevel);
+	void parse(const std::string& source,
 						 clang::SourceManager *sm,
 	           clang::Diagnostic *diag,
 	           clang::ASTConsumer *consumer);

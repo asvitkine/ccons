@@ -27,6 +27,7 @@
 
 #include "Parser.h"
 #include "SrcGen.h"
+#include "ClangUtils.h"
 
 
 template<typename T>
@@ -93,7 +94,8 @@ private:
 };
 
 
-Console::Console() :
+Console::Console(bool debugMode) :
+	_debugMode(debugMode),
 	_prompt(">>> ")
 {
 	_options.C99 = true;
@@ -107,18 +109,6 @@ Console::~Console()
 		_linker->releaseModule();
 }
 
-int parensMatched(std::string buf)
-{
-	int count = 0;
-	for (unsigned i = 0; i < buf.length(); i++) {
-		if (buf[i] == '{')
-			count++;
-		else if (buf[i] == '}')
-			count--;
-	}
-	return count;
-}
-
 const char * Console::prompt() const
 {
 	return _prompt.c_str();
@@ -128,32 +118,6 @@ const char * Console::input() const
 {
 	return _input.c_str();
 }
-
-class ProxyDiagnosticClient : public clang::DiagnosticClient {
-public:
-
-	ProxyDiagnosticClient(clang::DiagnosticClient *DC)
-		: _DC(DC), _hadErrors(false) {}
-
-	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
-	                      const clang::DiagnosticInfo &Info) {
-		if (!_DC || _hadErrors) return;
-		if (Info.getID() != clang::diag::warn_unused_expr &&
-		    Info.getID() != clang::diag::pp_macro_not_used)
-			_DC->HandleDiagnostic(DiagLevel, Info);
-		if (DiagLevel == clang::Diagnostic::Error)
-			_hadErrors = true;
-	}
-
-	bool hadErrors() {
-		return _hadErrors;
-	}
-
-private:
-
-	clang::DiagnosticClient *_DC;
-	bool _hadErrors;
-};
 
 string Console::genSource(string appendix)
 {
@@ -336,6 +300,9 @@ string Console::genAppendix(const char *line,
 				appendix += line;
 				appendix += "\n";
 			}
+		} else {
+			funcBody = line; // ex: if statement
+			moreLines->push_back(CodeLine(line, StmtLine));
 		}
 	} else if (src.empty()) {
 		std::cout << "\nNote: Last line ignored due to errors.\n";
@@ -348,6 +315,8 @@ string Console::genAppendix(const char *line,
 			funcNo += (_lines[i].second == StmtLine);
 		*fName = "__ccons_anon" + to_string(funcNo);
 		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody);
+		if (_debugMode)
+			fprintf(stderr, "Generating function %s()...\n", fName->c_str());
 	}
 
 	return appendix;
@@ -362,34 +331,23 @@ void Console::process(const char *line)
 	string appendix;
 	string src;
 
-	if (!_buffer.empty()) {
-		_buffer += line;
-		_buffer += "\n";
-		int indent = parensMatched(_buffer);
-		_input = string(indent * 2, ' ');
-		if (indent != 0)
-			return;
-		appendix = _buffer;
-		_buffer.clear();
-		_prompt = ">>> ";
-		_input = "";
-		// insert prototype to lines to append
-		std::istringstream iss;
-		iss.str(appendix);
-		string decl;
-		getline(iss, decl);
-		decl = decl.substr(0, decl.length() - 2) + ";";
-		linesToAppend.push_back(CodeLine(decl, DeclLine));
-	} else {
-		if (*line && line[strlen(line)-2] == '{') {
-			_buffer = line;
-			_buffer += "\n";
-			_prompt = "... ";
-			_input = "  ";
-			return;
-		}
-		appendix = genAppendix(line, &fName, retType, &linesToAppend, &hadErrors);
+	_buffer += line;
+	Parser p(_options);
+	int indentLevel;
+	if (!p.analyzeInput(_buffer, indentLevel)) {
+		// TODO: handle parse error!
+		_input = string(indentLevel * 2, ' ');
+		_prompt = "... ";
+		return;
 	}
+	_prompt = ">>> ";
+	_input = "";
+
+	// process the input
+	// TODO: figure out if input is a function, or a struct declaration, or
+	//       something else that must exist in a global scope and act accordingly
+	appendix = genAppendix(_buffer.c_str(), &fName, retType, &linesToAppend, &hadErrors);
+	_buffer.clear();
 
 	if (hadErrors)
 		return;
@@ -426,6 +384,8 @@ void Console::process(const char *line)
 			llvm::Function *F = module->getFunction(fName.c_str());
 			assert(F && "Function was not found!");
 			std::vector<llvm::GenericValue> params;
+			if (_debugMode)
+				fprintf(stderr, "Calling function %s()...\n", fName.c_str());
 			llvm::GenericValue result = _engine->runFunction(F, params);
 			if (retType.getTypePtr())
 				printGV(F, result, retType);
