@@ -33,7 +33,7 @@ class Console {
 
 public:
 
-	Console();
+	explicit Console(bool _debugMode);
 	virtual ~Console();
 
 	const char * prompt() const;
@@ -72,6 +72,7 @@ private:
 	                         clang::SourceManager *sm,
 	                         std::string *src);
 
+	bool _debugMode;
 	clang::LangOptions _options;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
