@@ -305,7 +305,7 @@ string Console::genAppendix(const char *line,
 			moreLines->push_back(CodeLine(line, StmtLine));
 		}
 	} else if (src.empty()) {
-		std::cout << "\nNote: Last line ignored due to errors.\n";
+		std::cerr << "\nNote: Last line ignored due to errors.\n";
 		*hadErrors = true;
 	}
 

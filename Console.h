@@ -29,7 +29,18 @@ namespace ccons {
 
 class Parser;
 
-class Console {
+class IConsole {
+
+public:
+
+	virtual ~IConsole() {}
+	virtual const char * prompt() const = 0;
+	virtual const char * input() const = 0;
+	virtual void process(const char *line) = 0;
+
+};
+
+class Console : public IConsole {
 
 public:
 
