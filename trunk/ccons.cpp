@@ -1,21 +1,27 @@
 #include <iostream>
+#include <fstream>
 
 #include <stdio.h>
 #include <fcntl.h>
-#include <pthread.h>
 
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/System/Signals.h>
 
+#include "ccons.pb.h"
+
 #include "Console.h"
+#include "RemoteConsole.h"
 #include "EditLineReader.h"
 
 using std::string;
 using ccons::Console;
+using ccons::IConsole;
+using ccons::RemoteConsole;
 using ccons::LineReader;
 using ccons::EditLineReader;
 using ccons::StdInLineReader;
+using ccons::ConsoleOutput;
 
 static llvm::cl::opt<bool>
 	DebugMode("ccons-debug", llvm::cl::desc("Print debugging information"));
@@ -23,16 +29,23 @@ static llvm::cl::opt<bool>
 	UseStdIo("use-std-io", llvm::cl::desc("Use standard IO for input and output"));
 static llvm::cl::opt<bool>
 	MultiProcess("multi-process", llvm::cl::desc("Run in multi-process mode"));
+static llvm::cl::opt<bool>
+	ProtoBufOutput("proto-buf-output", llvm::cl::desc("Output as protobuf"));
 
-static void *pipe_input(void *ptr)
+static IConsole * createConsole()
 {
-	FILE *ps = (FILE *) ptr;
-	char buf[1024];
-	while (1) {
-		const char *s = fgets(buf, sizeof(buf), ps);
-		if (s) printf("%s", buf);
-	}
-	return NULL;
+	if (MultiProcess)
+		return new RemoteConsole;
+	else
+		return new Console(DebugMode);
+}
+
+static LineReader * createReader()
+{
+	if (UseStdIo)
+		return new StdInLineReader;
+	else
+		return new EditLineReader;
 }
 
 int main(const int argc, char **argv)
@@ -43,37 +56,34 @@ int main(const int argc, char **argv)
 	if (DebugMode)
 		fprintf(stderr, "NOTE: Debugging information will be displayed.\n");
 
-	Console console(DebugMode);
-	llvm::OwningPtr<LineReader> reader;
+	llvm::OwningPtr<IConsole> console(createConsole());
+	llvm::OwningPtr<LineReader> reader(createReader());
 
-	FILE *ps;
-	pthread_t reader_thread;
-
-	if (MultiProcess) {
-		ps = popen("./ccons --use-std-io", "r+");
-		assert(ps);
-		fcntl(fileno(ps), F_SETFL, O_NONBLOCK);
-		pthread_create(&reader_thread, NULL, pipe_input, (void *) ps);
-	}
-
-	if (UseStdIo)
-		reader.reset(new StdInLineReader);
-	else
-		reader.reset(new EditLineReader);
-
-	const char *line = reader->readLine(console.prompt(), console.input());
+	const char *line = reader->readLine(console->prompt(), console->input());
 	while (line) {
-		if (MultiProcess) {
-			fputs(line, ps);
-			usleep(100000);
+		if (ProtoBufOutput) {
+			// FIXME: this is terrible ands needs serious cleanup...s
+			FILE *temp = tmpfile();
+			FILE *old_stdout = stdout;
+			stdout = temp;
+			console->process(line);
+			stdout = old_stdout;
+			char buf[1024];
+			rewind(temp);
+			fread(buf, sizeof(buf), 1, temp);
+			ConsoleOutput output;
+			output.set_output(buf);
+			output.set_prompt(console->prompt());
+			output.set_input(console->input());
+			string msg;
+			output.SerializeToString(&msg);
+			std::cout << output.DebugString();
+			std::cout.flush();
 		} else {
-			console.process(line);
+			console->process(line);
 		}
-		line = reader->readLine(console.prompt(), console.input());
+		line = reader->readLine(console->prompt(), console->input());
 	}
-
-	if (MultiProcess)
-		pclose(ps);
 
 	return 0;
 }

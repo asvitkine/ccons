@@ -1,0 +1,9 @@
+// protoc --cpp_out=. ccons.proto
+
+package ccons;
+
+message ConsoleOutput {
+  required string output = 1;
+  required string prompt = 2;
+  optional string input = 3;
+}
