@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -32,10 +33,15 @@ static llvm::cl::opt<bool>
 static llvm::cl::opt<bool>
 	ProtoBufOutput("proto-buf-output", llvm::cl::desc("Output as protobuf"));
 
+static std::stringstream ss_out;
+static std::stringstream ss_err;
+
 static IConsole * createConsole()
 {
 	if (MultiProcess)
 		return new RemoteConsole;
+	else if (ProtoBufOutput)
+		return new Console(DebugMode, ss_out, ss_err);		
 	else
 		return new Console(DebugMode);
 }
@@ -61,26 +67,17 @@ int main(const int argc, char **argv)
 
 	const char *line = reader->readLine(console->prompt(), console->input());
 	while (line) {
+		console->process(line);
 		if (ProtoBufOutput) {
-			// FIXME: this is terrible ands needs serious cleanup...s
-			FILE *temp = tmpfile();
-			FILE *old_stdout = stdout;
-			stdout = temp;
-			console->process(line);
-			stdout = old_stdout;
-			char buf[1024];
-			rewind(temp);
-			fread(buf, sizeof(buf), 1, temp);
 			ConsoleOutput output;
-			output.set_output(buf);
+			output.set_output(ss_out.str());
+			output.set_error_output(ss_err.str());
 			output.set_prompt(console->prompt());
 			output.set_input(console->input());
-			string msg;
-			output.SerializeToString(&msg);
 			std::cout << output.DebugString();
 			std::cout.flush();
-		} else {
-			console->process(line);
+			ss_out.clear();
+			ss_err.clear();
 		}
 		line = reader->readLine(console->prompt(), console->input());
 	}

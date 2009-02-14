@@ -20,10 +20,11 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 void protobuf_BuildDesc_ccons_2eproto_AssignGlobalDescriptors(const ::google::protobuf::FileDescriptor* file) {
   ConsoleOutput_descriptor_ = file->message_type(0);
   ConsoleOutput::default_instance_ = new ConsoleOutput();
-  static const int ConsoleOutput_offsets_[3] = {
+  static const int ConsoleOutput_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ConsoleOutput, output_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ConsoleOutput, prompt_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ConsoleOutput, input_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ConsoleOutput, error_output_),
   };
   ConsoleOutput_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -49,9 +50,9 @@ void protobuf_BuildDesc_ccons_2eproto() {
     ::google::protobuf::DescriptorPool::internal_generated_pool();
 
   pool->InternalBuildGeneratedFile(
-    "\n\013ccons.proto\022\005ccons\">\n\rConsoleOutput\022\016\n"
+    "\n\013ccons.proto\022\005ccons\"T\n\rConsoleOutput\022\016\n"
     "\006output\030\001 \002(\t\022\016\n\006prompt\030\002 \002(\t\022\r\n\005input\030\003"
-    " \001(\t", 84,
+    " \002(\t\022\024\n\014error_output\030\004 \002(\t", 106,
   &protobuf_BuildDesc_ccons_2eproto_AssignGlobalDescriptors);
 }
 
@@ -68,12 +69,14 @@ struct StaticDescriptorInitializer_ccons_2eproto {
 const ::std::string ConsoleOutput::_default_output_;
 const ::std::string ConsoleOutput::_default_prompt_;
 const ::std::string ConsoleOutput::_default_input_;
+const ::std::string ConsoleOutput::_default_error_output_;
 ConsoleOutput::ConsoleOutput()
   : ::google::protobuf::Message(),
     _cached_size_(0),
     output_(const_cast< ::std::string*>(&_default_output_)),
     prompt_(const_cast< ::std::string*>(&_default_prompt_)),
-    input_(const_cast< ::std::string*>(&_default_input_)) {
+    input_(const_cast< ::std::string*>(&_default_input_)),
+    error_output_(const_cast< ::std::string*>(&_default_error_output_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -84,7 +87,8 @@ ConsoleOutput::ConsoleOutput(const ConsoleOutput& from)
     _cached_size_(0),
     output_(const_cast< ::std::string*>(&_default_output_)),
     prompt_(const_cast< ::std::string*>(&_default_prompt_)),
-    input_(const_cast< ::std::string*>(&_default_input_)) {
+    input_(const_cast< ::std::string*>(&_default_input_)),
+    error_output_(const_cast< ::std::string*>(&_default_error_output_)) {
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   MergeFrom(from);
 }
@@ -98,6 +102,9 @@ ConsoleOutput::~ConsoleOutput() {
   }
   if (input_ != &_default_input_) {
     delete input_;
+  }
+  if (error_output_ != &_default_error_output_) {
+    delete error_output_;
   }
   if (this != default_instance_) {
   }
