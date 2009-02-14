@@ -38,11 +38,14 @@ void RemoteConsole::process(const char *line)
 	ConsoleOutput output;
 	string str;
 	char buf1[1000];
+	// FIXME: this needs to be better... (error checking, etc)
+	fgets(buf1, sizeof(buf1), _stream); str += buf1;
 	fgets(buf1, sizeof(buf1), _stream); str += buf1;
 	fgets(buf1, sizeof(buf1), _stream); str += buf1;
 	fgets(buf1, sizeof(buf1), _stream); str += buf1;
 	google::protobuf::TextFormat::ParseFromString(str, &output);
 	std::cout << output.output();
+	std::cerr << output.error_output();
 	_prompt = output.prompt();
 	_input = output.input();
 }

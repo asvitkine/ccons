@@ -1,10 +1,12 @@
 #ifndef CCONS_CONSOLE_H
 #define CCONS_CONSOLE_H
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>
 
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/ADT/OwningPtr.h>
 
 #include <clang/Basic/LangOptions.h>
@@ -44,7 +46,9 @@ class Console : public IConsole {
 
 public:
 
-	explicit Console(bool _debugMode);
+	Console(bool _debugMode,
+	        std::ostream& out = std::cout,
+	        std::ostream& err = std::cerr);
 	virtual ~Console();
 
 	const char * prompt() const;
@@ -84,6 +88,9 @@ private:
 	                         std::string *src);
 
 	bool _debugMode;
+	std::ostream& _out;
+	std::ostream& _err;
+	llvm::raw_os_ostream _raw_err;
 	clang::LangOptions _options;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;

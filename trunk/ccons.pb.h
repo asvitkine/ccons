@@ -88,13 +88,21 @@ class ConsoleOutput : public ::google::protobuf::Message {
   inline void set_prompt(const char* value);
   inline ::std::string* mutable_prompt();
   
-  // optional string input = 3;
+  // required string input = 3;
   inline bool has_input() const;
   inline void clear_input();
   inline const ::std::string& input() const;
   inline void set_input(const ::std::string& value);
   inline void set_input(const char* value);
   inline ::std::string* mutable_input();
+  
+  // required string error_output = 4;
+  inline bool has_error_output() const;
+  inline void clear_error_output();
+  inline const ::std::string& error_output() const;
+  inline void set_error_output(const ::std::string& value);
+  inline void set_error_output(const char* value);
+  inline ::std::string* mutable_error_output();
   
  private:
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
@@ -106,9 +114,11 @@ class ConsoleOutput : public ::google::protobuf::Message {
   static const ::std::string _default_prompt_;
   ::std::string* input_;
   static const ::std::string _default_input_;
+  ::std::string* error_output_;
+  static const ::std::string _default_error_output_;
   friend void protobuf_BuildDesc_ccons_2eproto_AssignGlobalDescriptors(
       const ::google::protobuf::FileDescriptor* file);
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
   
   // WHY DOES & HAVE LOWER PRECEDENCE THAN != !?
   inline bool _has_bit(int index) const {
@@ -204,7 +214,7 @@ inline ::std::string* ConsoleOutput::mutable_prompt() {
   return prompt_;
 }
 
-// optional string input = 3;
+// required string input = 3;
 inline bool ConsoleOutput::has_input() const {
   return _has_bit(2);
 }
@@ -237,6 +247,41 @@ inline ::std::string* ConsoleOutput::mutable_input() {
     input_ = new ::std::string;
   }
   return input_;
+}
+
+// required string error_output = 4;
+inline bool ConsoleOutput::has_error_output() const {
+  return _has_bit(3);
+}
+inline void ConsoleOutput::clear_error_output() {
+  if (error_output_ != &_default_error_output_) {
+    error_output_->clear();
+  }
+  _clear_bit(3);
+}
+inline const ::std::string& ConsoleOutput::error_output() const {
+  return *error_output_;
+}
+inline void ConsoleOutput::set_error_output(const ::std::string& value) {
+  _set_bit(3);
+  if (error_output_ == &_default_error_output_) {
+    error_output_ = new ::std::string;
+  }
+  error_output_->assign(value);
+}
+inline void ConsoleOutput::set_error_output(const char* value) {
+  _set_bit(3);
+  if (error_output_ == &_default_error_output_) {
+    error_output_ = new ::std::string;
+  }
+  error_output_->assign(value);
+}
+inline ::std::string* ConsoleOutput::mutable_error_output() {
+  _set_bit(3);
+  if (error_output_ == &_default_error_output_) {
+    error_output_ = new ::std::string;
+  }
+  return error_output_;
 }
 
 

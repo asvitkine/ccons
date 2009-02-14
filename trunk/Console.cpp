@@ -120,8 +120,11 @@ private:
 };
 
 
-Console::Console(bool debugMode) :
+Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_debugMode(debugMode),
+	_out(out),
+	_err(err),
+	_raw_err(err),
 	_prompt(">>> ")
 {
 	_options.C99 = true;
@@ -170,7 +173,7 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	*src += line;
 	*src += "\n}\n";
 
-	clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
+	clang::TextDiagnosticPrinter tdp(_raw_err, false, true, false);
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
 	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
@@ -200,23 +203,23 @@ void Console::printGV(const llvm::Function *F,
 	switch (RetTy->getTypeID()) {
 		case llvm::Type::IntegerTyID:
 			if (QT->isUnsignedIntegerType())
-				oprintf(std::cout, ("=> (" + type + ") %lu\n").c_str(), GV.IntVal.getZExtValue());
+				oprintf(_out, ("=> (" + type + ") %lu\n").c_str(), GV.IntVal.getZExtValue());
 			else
-				oprintf(std::cout, ("=> (" + type + ") %ld\n").c_str(), GV.IntVal.getZExtValue());
+				oprintf(_out, ("=> (" + type + ") %ld\n").c_str(), GV.IntVal.getZExtValue());
 			return;
 		case llvm::Type::FloatTyID:
-			oprintf(std::cout, ("=> (" + type + ") %f\n").c_str(), GV.FloatVal);
+			oprintf(_out, ("=> (" + type + ") %f\n").c_str(), GV.FloatVal);
 			return;
 		case llvm::Type::DoubleTyID:
-			oprintf(std::cout, ("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
+			oprintf(_out, ("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
 			// FIXME: this is a hack
 			if (p && !strncmp(type.c_str(), "char", 4))
-				oprintf(std::cout, ("=> (" + type + ") \"%s\"\n").c_str(), p);
+				oprintf(_out, ("=> (" + type + ") \"%s\"\n").c_str(), p);
 			else
-				oprintf(std::cout, ("=> (" + type + ") %p\n").c_str(), p);
+				oprintf(_out, ("=> (" + type + ") %p\n").c_str(), p);
 			return;
 		}
 		case llvm::Type::VoidTyID:
@@ -331,7 +334,7 @@ string Console::genAppendix(const char *line,
 			moreLines->push_back(CodeLine(line, StmtLine));
 		}
 	} else if (src.empty()) {
-		std::cerr << "\nNote: Last line ignored due to errors.\n";
+		_err << "\nNote: Last line ignored due to errors.\n";
 		*hadErrors = true;
 	}
 
@@ -342,7 +345,7 @@ string Console::genAppendix(const char *line,
 		*fName = "__ccons_anon" + to_string(funcNo);
 		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody);
 		if (_debugMode)
-			oprintf(std::cerr, "Generating function %s()...\n", fName->c_str());
+			oprintf(_err, "Generating function %s()...\n", fName->c_str());
 	}
 
 	return appendix;
@@ -383,7 +386,7 @@ void Console::process(const char *line)
 	for (unsigned i = 0; i < linesToAppend.size(); ++i)
 		_lines.push_back(linesToAppend[i]);
 
-	clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
+	clang::TextDiagnosticPrinter tdp(_raw_err, false, true, false);
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
 	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
@@ -401,7 +404,7 @@ void Console::process(const char *line)
 			_linker.reset(new llvm::Linker("ccons", "ccons"));
 		string err;
 		_linker->LinkInModule(module, &err);
-		std::cout << err;
+		_out << err;
 		// link it with the existing ones
 		if (!fName.empty()) {
 			module = _linker->getModule();
@@ -411,7 +414,7 @@ void Console::process(const char *line)
 			assert(F && "Function was not found!");
 			std::vector<llvm::GenericValue> params;
 			if (_debugMode)
-				oprintf(std::cerr, "Calling function %s()...\n", fName.c_str());
+				oprintf(_err, "Calling function %s()...\n", fName.c_str());
 			llvm::GenericValue result = _engine->runFunction(F, params);
 			if (retType.getTypePtr())
 				printGV(F, result, retType);
