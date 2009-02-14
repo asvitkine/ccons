@@ -29,6 +29,32 @@
 #include "SrcGen.h"
 #include "ClangUtils.h"
 
+void vstring_printf(std::string *dst, const char *fmt, va_list ap)
+{
+	char *s;
+	if (vasprintf(&s, fmt, ap) > 0) {
+		dst->assign(s);
+		free(s);
+	}
+}
+
+void string_printf(std::string *dst, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vstring_printf(dst, fmt, ap);
+	va_end(ap);  
+}
+
+void oprintf(std::ostream& out, const char *fmt, ...)
+{
+	std::string str;
+	va_list ap;
+	va_start(ap, fmt);
+	vstring_printf(&str, fmt, ap);
+	va_end(ap);  
+	out << str;
+}
 
 template<typename T>
 inline std::string to_string(const T& t)
@@ -174,23 +200,23 @@ void Console::printGV(const llvm::Function *F,
 	switch (RetTy->getTypeID()) {
 		case llvm::Type::IntegerTyID:
 			if (QT->isUnsignedIntegerType())
-				printf(("=> (" + type + ") %lu\n").c_str(), GV.IntVal.getZExtValue());
+				oprintf(std::cout, ("=> (" + type + ") %lu\n").c_str(), GV.IntVal.getZExtValue());
 			else
-				printf(("=> (" + type + ") %ld\n").c_str(), GV.IntVal.getZExtValue());
+				oprintf(std::cout, ("=> (" + type + ") %ld\n").c_str(), GV.IntVal.getZExtValue());
 			return;
 		case llvm::Type::FloatTyID:
-			printf(("=> (" + type + ") %f\n").c_str(), GV.FloatVal);
+			oprintf(std::cout, ("=> (" + type + ") %f\n").c_str(), GV.FloatVal);
 			return;
 		case llvm::Type::DoubleTyID:
-			printf(("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
+			oprintf(std::cout, ("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
 			// FIXME: this is a hack
 			if (p && !strncmp(type.c_str(), "char", 4))
-				printf(("=> (" + type + ") \"%s\"\n").c_str(), p);
+				oprintf(std::cout, ("=> (" + type + ") \"%s\"\n").c_str(), p);
 			else
-				printf(("=> (" + type + ") %p\n").c_str(), p);
+				oprintf(std::cout, ("=> (" + type + ") %p\n").c_str(), p);
 			return;
 		}
 		case llvm::Type::VoidTyID:
@@ -316,7 +342,7 @@ string Console::genAppendix(const char *line,
 		*fName = "__ccons_anon" + to_string(funcNo);
 		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody);
 		if (_debugMode)
-			fprintf(stderr, "Generating function %s()...\n", fName->c_str());
+			oprintf(std::cerr, "Generating function %s()...\n", fName->c_str());
 	}
 
 	return appendix;
@@ -385,7 +411,7 @@ void Console::process(const char *line)
 			assert(F && "Function was not found!");
 			std::vector<llvm::GenericValue> params;
 			if (_debugMode)
-				fprintf(stderr, "Calling function %s()...\n", fName.c_str());
+				oprintf(std::cerr, "Calling function %s()...\n", fName.c_str());
 			llvm::GenericValue result = _engine->runFunction(F, params);
 			if (retType.getTypePtr())
 				printGV(F, result, retType);
