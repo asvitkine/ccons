@@ -197,32 +197,34 @@ void Console::printGV(const llvm::Function *F,
                       const llvm::GenericValue& GV,
                       const clang::QualType& QT)
 {
-	string type = QT.getAsString();
+	const char *type = QT.getAsString().c_str();
 	const llvm::FunctionType *FTy = F->getFunctionType();
 	const llvm::Type *RetTy = FTy->getReturnType();
 	switch (RetTy->getTypeID()) {
 		case llvm::Type::IntegerTyID:
 			if (QT->isUnsignedIntegerType())
-				oprintf(_out, ("=> (" + type + ") %lu\n").c_str(), GV.IntVal.getZExtValue());
+				oprintf(_out, "=> (%s) %lu\n", type, GV.IntVal.getZExtValue());
 			else
-				oprintf(_out, ("=> (" + type + ") %ld\n").c_str(), GV.IntVal.getZExtValue());
+				oprintf(_out, "=> (%s) %ld\n", type, GV.IntVal.getZExtValue());
 			return;
 		case llvm::Type::FloatTyID:
-			oprintf(_out, ("=> (" + type + ") %f\n").c_str(), GV.FloatVal);
+			oprintf(_out, "=> (%s) %f\n", type, GV.FloatVal);
 			return;
 		case llvm::Type::DoubleTyID:
-			oprintf(_out, ("=> (" + type + ") %lf\n").c_str(), GV.DoubleVal);
+			oprintf(_out, "=> (%s) %lf\n", type, GV.DoubleVal);
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
 			// FIXME: this is a hack
-			if (p && !strncmp(type.c_str(), "char", 4))
-				oprintf(_out, ("=> (" + type + ") \"%s\"\n").c_str(), p);
+			if (p && !strncmp(type, "char", 4))
+				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			else
-				oprintf(_out, ("=> (" + type + ") %p\n").c_str(), p);
+				oprintf(_out, "=> (%s) %p\n", type, p);
 			return;
 		}
 		case llvm::Type::VoidTyID:
+			if (strcmp(type, "void"))
+				oprintf(_out, "=> (%s)\n", type);
 			return;
 		default:
 			break;
@@ -403,7 +405,7 @@ void Console::process(const char *line)
 
 	for (unsigned i = 0; i < linesToAppend.size(); ++i)
 		_lines.push_back(linesToAppend[i]);
-	
+
 	llvm::Module *module = codegen->ReleaseModule();
 	if (module) {
 		if (!_linker)

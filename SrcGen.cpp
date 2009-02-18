@@ -21,7 +21,7 @@ string genFunc(const clang::QualType *retType,
                const string& fBody)
 {
 	string func;
-	if (!retType) {
+	if (!retType || (*retType)->isStructureType()) {
 		func = "void " + fName + "(void){\n";
 	} else if ((*retType)->isArrayType()) {
 		// TODO: What about arrays of anonymous types?
