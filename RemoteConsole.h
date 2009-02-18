@@ -25,6 +25,37 @@ private:
 	std::string _prompt;
 	std::string _input;
 
+	void reset();
+
+};
+
+class SerializedConsoleOutput {
+
+public:
+
+	SerializedConsoleOutput();
+	SerializedConsoleOutput(const std::string& output,
+	                        const std::string& error,
+	                        const std::string& prompt,
+	                        const std::string& input);
+
+	bool readFromStream(FILE *stream);
+	void writeToString(std::string *str) const;
+	
+	const std::string& output() const;
+	const std::string& error() const;
+	const std::string& prompt() const;
+	const std::string& input() const;
+
+private:
+
+	std::string _output;
+	std::string _error;
+	std::string _prompt;
+	std::string _input;
+
+	static bool readEscapedString(FILE *stream, std::string *str);
+
 };
 
 } // namespace ccons
