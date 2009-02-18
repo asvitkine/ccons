@@ -15,7 +15,7 @@ set(CLANG_LIBS "-lclangDriver -lclangAST -lclangLex -lclangCodeGen -lclangSema -
 
 Project(ccons)
 
-add_executable(ccons ccons.cpp ClangUtils.cpp Console.cpp Parser.cpp SrcGen.cpp EditLineReader.cpp LineReader.cpp RemoteConsole.cpp ccons.pb.cc)
+add_executable(ccons ccons.cpp ClangUtils.cpp Console.cpp Parser.cpp SrcGen.cpp StringUtils.cpp EditLineReader.cpp LineReader.cpp RemoteConsole.cpp)
 
 include_directories(${LLVM_INCLUDE_DIR})
 include_directories(../../include/)
@@ -26,6 +26,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g -D__STDC_LIMIT_MACROS -D__S
 
 set(LIBS ${LIBS} ${CLANG_LIBS})
 set(LIBS ${LIBS} ${LLVM_LIBS})
-set(LIBS ${LIBS} -ledit -lcurses -lprotobuf)
+set(LIBS ${LIBS} -ledit -lcurses)
 target_link_libraries(ccons ${LIBS})
 

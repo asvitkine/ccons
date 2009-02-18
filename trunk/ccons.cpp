@@ -2,14 +2,12 @@
 #include <fstream>
 #include <sstream>
 
-#include <stdio.h>
-#include <fcntl.h>
+#include <signal.h>
 
 #include <llvm/ADT/OwningPtr.h>
+#include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/System/Signals.h>
-
-#include "ccons.pb.h"
 
 #include "Console.h"
 #include "RemoteConsole.h"
@@ -22,16 +20,20 @@ using ccons::RemoteConsole;
 using ccons::LineReader;
 using ccons::EditLineReader;
 using ccons::StdInLineReader;
-using ccons::ConsoleOutput;
+using ccons::SerializedConsoleOutput;
 
 static llvm::cl::opt<bool>
-	DebugMode("ccons-debug", llvm::cl::desc("Print debugging information"));
+	DebugMode("ccons-debug",
+						llvm::cl::desc("Print debugging information"));
 static llvm::cl::opt<bool>
-	UseStdIo("use-std-io", llvm::cl::desc("Use standard IO for input and output"));
+	UseStdIo("ccons-use-std-io",
+	         llvm::cl::desc("Use standard IO for input and output"));
 static llvm::cl::opt<bool>
-	MultiProcess("multi-process", llvm::cl::desc("Run in multi-process mode"));
+	SerializedOutput("ccons-serialized-output",
+	                 llvm::cl::desc("Output will be serialized"));
 static llvm::cl::opt<bool>
-	ProtoBufOutput("proto-buf-output", llvm::cl::desc("Output as protobuf"));
+	MultiProcess("ccons-multi-process",
+							 llvm::cl::desc("Run in multi-process mode"));
 
 static std::stringstream ss_out;
 static std::stringstream ss_err;
@@ -40,7 +42,7 @@ static IConsole * createConsole()
 {
 	if (MultiProcess)
 		return new RemoteConsole;
-	else if (ProtoBufOutput)
+	else if (SerializedOutput)
 		return new Console(DebugMode, ss_out, ss_err);		
 	else
 		return new Console(DebugMode);
@@ -54,13 +56,38 @@ static LineReader * createReader()
 		return new EditLineReader;
 }
 
+void gotsig(int signo)
+{
+	string str;
+
+	if (signo == SIGBUS) {
+		str = "Bus error\n";
+	} else if (signo == SIGSEGV) {
+		str = "Segmentation fault\n";
+	}
+
+	SerializedConsoleOutput sco("", "", "", str);
+	sco.writeToString(&str);
+	std::cout << str;
+	std::cout.flush();
+	exit(-1);
+}
+
 int main(const int argc, char **argv)
 {
-	llvm::cl::ParseCommandLineOptions(argc, argv, "ccons Interactive C Console\n");
-	llvm::sys::PrintStackTraceOnErrorSignal();
+	llvm::cl::ParseCommandLineOptions(argc, argv, "ccons Interactive C Console\n",
+	                                  false/*, "ccons-"*/);
+	// TODO SetVersionPrinter()
 
-	if (DebugMode)
-		fprintf(stderr, "NOTE: Debugging information will be displayed.\n");
+	if (DebugMode) {
+		std::cerr << "NOTE: Debugging information will be displayed.\n";
+		llvm::sys::PrintStackTraceOnErrorSignal();
+	} else if (SerializedOutput) {
+		signal(SIGBUS, gotsig);
+		signal(SIGSEGV, gotsig);
+	} else if (MultiProcess) {
+		signal(SIGCHLD, SIG_IGN);
+	}
 
 	llvm::OwningPtr<IConsole> console(createConsole());
 	llvm::OwningPtr<LineReader> reader(createReader());
@@ -68,16 +95,15 @@ int main(const int argc, char **argv)
 	const char *line = reader->readLine(console->prompt(), console->input());
 	while (line) {
 		console->process(line);
-		if (ProtoBufOutput) {
-			ConsoleOutput output;
-			output.set_output(ss_out.str());
-			output.set_error_output(ss_err.str());
-			output.set_prompt(console->prompt());
-			output.set_input(console->input());
-			std::cout << output.DebugString();
+		if (SerializedOutput) {
+			string str;
+			SerializedConsoleOutput sco(ss_out.str(), ss_err.str(),
+																	console->prompt(), console->input());
+      sco.writeToString(&str);
+			std::cout << str;
 			std::cout.flush();
-			ss_out.clear();
-			ss_err.clear();
+			ss_out.str("");
+			ss_err.str("");
 		}
 		line = reader->readLine(console->prompt(), console->input());
 	}

@@ -1,25 +1,30 @@
 #include "RemoteConsole.h"
 
 #include <iostream>
+#include <sstream>
 
-#include <google/protobuf/text_format.h>
-
-#include "ccons.pb.h"
+#include <llvm/ADT/StringExtras.h>
 
 using std::string;
 
 namespace ccons {
 
 RemoteConsole::RemoteConsole()
-	: _stream(popen("./ccons --use-std-io --proto-buf-output", "r+"))
-	, _prompt(">>> ")
 {
-	assert(_stream && "Could not popen!");
+	reset();
 }
 
 RemoteConsole::~RemoteConsole()
 {
 	pclose(_stream);
+}
+
+void RemoteConsole::reset()
+{
+	_stream = popen("./ccons --use-std-io --serialized-output", "r+");	
+	assert(_stream && "Could not popen!");
+	_prompt = ">>> ";
+	_input = "";
 }
 
 const char * RemoteConsole::prompt() const
@@ -34,20 +39,96 @@ const char * RemoteConsole::input() const
 
 void RemoteConsole::process(const char *line)
 {
+
 	fputs(line, _stream);
-	ConsoleOutput output;
-	string str;
-	char buf1[1000];
-	// FIXME: this needs to be better... (error checking, etc)
-	fgets(buf1, sizeof(buf1), _stream); str += buf1;
-	fgets(buf1, sizeof(buf1), _stream); str += buf1;
-	fgets(buf1, sizeof(buf1), _stream); str += buf1;
-	fgets(buf1, sizeof(buf1), _stream); str += buf1;
-	google::protobuf::TextFormat::ParseFromString(str, &output);
-	std::cout << output.output();
-	std::cerr << output.error_output();
-	_prompt = output.prompt();
-	_input = output.input();
+
+	SerializedConsoleOutput sco;
+	bool success = sco.readFromStream(_stream);
+	if (!success || sco.input() == "i haz an error") {
+		reset();
+		std::cout << "\nNOTE: Interpreter restarted.\n";
+		return;
+	}
+
+	std::cout << sco.output();
+	std::cerr << sco.error();
+	_prompt = sco.prompt();
+	_input = sco.input();
+}
+
+
+SerializedConsoleOutput::SerializedConsoleOutput()
+{
+}
+
+SerializedConsoleOutput::SerializedConsoleOutput(const std::string& output,
+                                                 const std::string& error,
+                                                 const std::string& prompt,
+                                                 const std::string& input)
+	: _output(output)
+	, _error(error)
+	, _prompt(prompt)
+	, _input(input)
+{
+}
+
+bool SerializedConsoleOutput::readEscapedString(FILE *stream, std::string *str)
+{
+	char buf[1024];
+	if (fgets(buf, sizeof(buf), stream)) {
+		buf[strlen(buf) - 1] = '\0';
+		*str = buf;
+		llvm::UnescapeString(*str);
+		return true;
+	}
+	return false;
+}
+
+bool SerializedConsoleOutput::readFromStream(FILE *stream)
+{
+	return readEscapedString(stream, &_output) &&
+	       readEscapedString(stream, &_error) &&
+	       readEscapedString(stream, &_prompt) &&
+	       readEscapedString(stream, &_input);
+}
+
+void SerializedConsoleOutput::writeToString(std::string *str) const
+{
+	std::stringstream ss;
+	string temp;
+	temp = _output;
+	llvm::EscapeString(temp);
+	ss << temp << "\n";
+	temp = _error;
+	llvm::EscapeString(temp);
+	ss << temp << "\n";
+	temp = _prompt;
+	llvm::EscapeString(temp);
+	ss << temp << "\n";
+	temp = _input;
+	llvm::EscapeString(temp);
+	ss << temp << "\n";
+	*str = ss.str();
+}
+
+const std::string& SerializedConsoleOutput::output() const
+{
+	return _output;
+}
+
+const std::string& SerializedConsoleOutput::error() const
+{
+	return _error;
+}
+
+const std::string& SerializedConsoleOutput::prompt() const
+{
+	return _prompt;
+}
+
+const std::string& SerializedConsoleOutput::input() const
+{
+	return _input;
 }
 
 } // namespace ccons
