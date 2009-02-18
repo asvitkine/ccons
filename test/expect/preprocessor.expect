@@ -16,3 +16,6 @@ check "XYZ;" "=> (int) 123"
 send "#undef XYZ\n"
 send "#define XYZ 100\n"
 check "XYZ;" "=> (int) 100"
+
+check "#include <xyz.abc>" "Note: Last line ignored due to errors."
+
