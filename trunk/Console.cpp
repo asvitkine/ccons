@@ -317,6 +317,7 @@ string Console::genAppendix(const char *line,
 	*hadErrors = false;
 	if (*line == '#') {
 		moreLines->push_back(CodeLine(line, PrprLine));
+		appendix += line;
 	} else if (const clang::Stmt *S = lineToStmt(line, &sm, &src)) {
 		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
 			QT = E->getType();
@@ -383,9 +384,6 @@ void Console::process(const char *line)
 
 	src = genSource(appendix);
 
-	for (unsigned i = 0; i < linesToAppend.size(); ++i)
-		_lines.push_back(linesToAppend[i]);
-
 	clang::TextDiagnosticPrinter tdp(_raw_err, false, true, false);
 	ProxyDiagnosticClient pdc(&tdp);
 	clang::Diagnostic diag(&pdc);
@@ -398,6 +396,14 @@ void Console::process(const char *line)
 	clang::SourceManager sm;
 	Parser p2(_options); // we keep the other parser around because of QT...
 	p2.parse(src, &sm, &diag, codegen.get());
+	if (pdc.hadErrors()) {
+		_err << "\nNote: Last line ignored due to errors.\n";
+		return;
+	}
+
+	for (unsigned i = 0; i < linesToAppend.size(); ++i)
+		_lines.push_back(linesToAppend[i]);
+	
 	llvm::Module *module = codegen->ReleaseModule();
 	if (module) {
 		if (!_linker)
