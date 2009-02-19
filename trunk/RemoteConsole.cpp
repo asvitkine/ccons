@@ -39,12 +39,12 @@ const char * RemoteConsole::input() const
 
 void RemoteConsole::process(const char *line)
 {
-
 	fputs(line, _stream);
 
 	SerializedConsoleOutput sco;
 	bool success = sco.readFromStream(_stream);
 	if (!success || sco.input() == "i haz an error") {
+		fclose(_stream);
 		reset();
 		std::cout << "\nNOTE: Interpreter restarted.\n";
 		return;
