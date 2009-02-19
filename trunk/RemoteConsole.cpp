@@ -21,7 +21,7 @@ RemoteConsole::~RemoteConsole()
 
 void RemoteConsole::reset()
 {
-	_stream = popen("./ccons --use-std-io --serialized-output", "r+");	
+	_stream = popen("./ccons --ccons-use-std-io --ccons-serialized-output", "r+");	
 	assert(_stream && "Could not popen!");
 	_prompt = ">>> ";
 	_input = "";
@@ -43,15 +43,18 @@ void RemoteConsole::process(const char *line)
 
 	SerializedConsoleOutput sco;
 	bool success = sco.readFromStream(_stream);
-	if (!success || sco.input() == "i haz an error") {
+	if (success) {
+		std::cout << sco.output();
+		std::cerr << sco.error();
+	}
+
+	if (!success || sco.prompt().empty()) {
 		fclose(_stream);
 		reset();
 		std::cout << "\nNOTE: Interpreter restarted.\n";
 		return;
 	}
 
-	std::cout << sco.output();
-	std::cerr << sco.error();
 	_prompt = sco.prompt();
 	_input = sco.input();
 }
