@@ -66,7 +66,7 @@ void gotsig(int signo)
 		str = "Segmentation fault\n";
 	}
 
-	SerializedConsoleOutput sco("", "", "", str);
+	SerializedConsoleOutput sco("", str, "", "");
 	sco.writeToString(&str);
 	std::cout << str;
 	std::cout.flush();
