@@ -1,5 +1,8 @@
 #include "StringUtils.h"
 
+#include <stdlib.h>
+#include <stdarg.h>
+
 namespace ccons {
 
 void vstring_printf(std::string *dst, const char *fmt, va_list ap)
