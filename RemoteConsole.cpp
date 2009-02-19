@@ -21,6 +21,9 @@ RemoteConsole::~RemoteConsole()
 
 void RemoteConsole::reset()
 {
+	// FIXME: Apparently bi-directional popen() isn't standard (Linux doesn't have
+	// it). Should investigate just using pipe() as per:
+	//   http://snippets.dzone.com/posts/show/1134
 	_stream = popen("./ccons --ccons-use-std-io --ccons-serialized-output", "r+");	
 	assert(_stream && "Could not popen!");
 	_prompt = ">>> ";
