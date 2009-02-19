@@ -5,6 +5,8 @@
 
 #include <llvm/ADT/StringExtras.h>
 
+#include "popen2.h"
+
 using std::string;
 
 namespace ccons {
@@ -16,16 +18,30 @@ RemoteConsole::RemoteConsole()
 
 RemoteConsole::~RemoteConsole()
 {
-	pclose(_stream);
+	cleanup();
+}
+
+void RemoteConsole::cleanup()
+{
+	if (_ostream) {
+		fclose(_ostream);
+		_ostream = NULL;
+	}
+	if (_istream) {
+		fclose(_istream);
+		_istream = NULL;
+	}
 }
 
 void RemoteConsole::reset()
 {
-	// FIXME: Apparently bi-directional popen() isn't standard (Linux doesn't have
-	// it). Should investigate just using pipe() as per:
-	//   http://snippets.dzone.com/posts/show/1134
-	_stream = popen("./ccons --ccons-use-std-io --ccons-serialized-output", "r+");	
-	assert(_stream && "Could not popen!");
+	// TODO: check for errors!
+	int infp, outfp;
+	popen2("./ccons --ccons-use-std-io --ccons-serialized-output", &infp, &outfp);
+	_ostream = fdopen(infp, "w");
+	setlinebuf(_ostream);
+	_istream = fdopen(outfp, "r");
+	setlinebuf(_istream);
 	_prompt = ">>> ";
 	_input = "";
 }
@@ -42,17 +58,17 @@ const char * RemoteConsole::input() const
 
 void RemoteConsole::process(const char *line)
 {
-	fputs(line, _stream);
+	fputs(line, _ostream);
 
 	SerializedConsoleOutput sco;
-	bool success = sco.readFromStream(_stream);
+	bool success = sco.readFromStream(_istream);
 	if (success) {
 		std::cout << sco.output();
 		std::cerr << sco.error();
 	}
 
 	if (!success || sco.prompt().empty()) {
-		fclose(_stream);
+		cleanup();
 		reset();
 		std::cout << "\nNOTE: Interpreter restarted.\n";
 		return;

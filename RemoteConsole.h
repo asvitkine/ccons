@@ -21,10 +21,12 @@ public:
 
 private:
 
-	FILE *_stream;
+	FILE *_ostream;
+	FILE *_istream;
 	std::string _prompt;
 	std::string _input;
 
+	void cleanup();
 	void reset();
 
 };
