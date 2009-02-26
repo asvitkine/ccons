@@ -89,6 +89,9 @@ bool Parser::analyzeInput(const string& buffer, int& indentLevel)
 		PP.Lex(Tok);
 	}
 
+	// TODO: This doesn't work properly on do { ... } while(X);'s, if the user
+	//       ends the input after the }.
+
 	// TODO: We need to properly account for indent-level for blocks that do not
 	//       have braces... such as:
 	//
