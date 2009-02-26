@@ -246,6 +246,8 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						// initializers, then split it up into x[0] = 'a'; x[1] = 'b'; and
 						// so forth, which would go in the function body, while making the
 						// declaration global.
+						// TODO: This needs to be done recursively, for multi-dimensional
+						//       array initializers.
 						unsigned numInits = ILE->getNumInits();
 						for (unsigned i = 0; i < numInits; i++) {
 							std::stringstream stmt;
