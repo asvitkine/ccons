@@ -241,12 +241,21 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						global << decl << " = ";
 						global << src.substr(range.first, range.second - range.first);
 						*appendix += global.str() + ";\n";
+					} else if (const clang::InitListExpr *ILE = dyn_cast<clang::InitListExpr>(I)) {
+						// If it's an InitListExpr like {'a','b','c'}, but with non-constant
+						// initializers, then split it up into x[0] = 'a'; x[1] = 'b'; and
+						// so forth, which would go in the function body, while making the
+						// declaration global.
+						unsigned numInits = ILE->getNumInits();
+						for (unsigned i = 0; i < numInits; i++) {
+							std::stringstream stmt;
+							stmt << VD->getNameAsCString() << "[" << i << "] = ";
+							range = getStmtRange(ILE->getInit(i), sm);
+							stmt << src.substr(range.first, range.second - range.first) << ";";
+							stmts.push_back(stmt.str());
+						}
+						*appendix += decl + ";\n";
 					} else {
-						// TODO: if it's an InitListExpr like {'a','b','c'}, then it's not
-						//       allowed to exist in a normal initializer... (and we can't
-						//       just place it in the global context since the params may
-						//       be function calls or other non-constants). Thus it has to
-						//       be split into array[0] = 'a'; array[1] = 'b'; .. etc. :(
 						std::stringstream stmt;
 						stmt << VD->getNameAsCString() << " = "
 						     << src.substr(range.first, range.second - range.first) << ";";
