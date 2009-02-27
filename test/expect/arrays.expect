@@ -12,4 +12,7 @@ proc check {input output} {
 
 spawn ../../ccons
 send "int x\[3\] = {1, 2, 3};\n"
-check {x\[0\];} {=> (int) 1}
+check {x[0];} {=> (int) 1}
+send "int y\[2\]\[2\] = {{10,11},{12,13}};\n"
+check {y[0][1];} {=> (int) 11}
+check {y[1][0];} {=> (int) 12}
