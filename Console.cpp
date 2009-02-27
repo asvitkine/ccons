@@ -34,58 +34,6 @@ using std::string;
 
 namespace ccons {
 
-class StmtFinder : public clang::StmtVisitor<StmtFinder> {
-public:
-
-	explicit StmtFinder(unsigned pos, const clang::SourceManager& sm) :
-		_pos(pos), _sm(sm), _S(NULL) {}
-	~StmtFinder() {}
-
-	void VisitChildren(clang::Stmt *S) {
-		for (clang::Stmt::child_iterator I = S->child_begin(), E = S->child_end();
-		     I != E; ++I) {
-			if (*I) {
-				Visit(*I);
-			}
-		}
-	}
-
-	void VisitStmt(clang::Stmt *S) {
-		clang::SourceLocation Loc = S->getLocStart();
-		if (_sm.getFileOffset(_sm.getInstantiationLoc(Loc)) == _pos) {
-			_S = S;
-		}
-	}
-
-	clang::Stmt * getStmt() { return _S; }
-
-private:
-
-	unsigned _pos;
-	const clang::SourceManager& _sm;
-	clang::Stmt *_S;
-};
-
-class FunctionBodyConsumer : public clang::ASTConsumer {
-public:
-
-	explicit FunctionBodyConsumer(StmtFinder *SF) : SF(SF) {}
-	~FunctionBodyConsumer() {}
-
-	void HandleTopLevelDecl(clang::Decl *D) {
-		if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(D)) {
-			if (clang::Stmt *S = FD->getBody()) {
-				SF->VisitChildren(S);
-			}
-		}
-	}
-
-private:
-
-	StmtFinder *SF;
-};
-
-
 Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_debugMode(debugMode),
 	_out(out),
@@ -114,7 +62,7 @@ const char * Console::input() const
 	return _input.c_str();
 }
 
-string Console::genSource(string appendix)
+string Console::genSource(string appendix) const
 {
 	string src;
 	for (unsigned i = 0; i < _lines.size(); ++i) {
@@ -246,8 +194,6 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						// initializers, then split it up into x[0] = 'a'; x[1] = 'b'; and
 						// so forth, which would go in the function body, while making the
 						// declaration global.
-						// TODO: This needs to be done recursively, for multi-dimensional
-						//       array initializers.
 						unsigned numInits = ILE->getNumInits();
 						for (unsigned i = 0; i < numInits; i++) {
 							std::stringstream stmt;
@@ -279,7 +225,8 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 	return false;
 }
 
-string Console::genAppendix(const char *line,
+string Console::genAppendix(const char *source,
+                            const char *line,
                             string *fName,
                             clang::QualType& QT,
                             std::vector<CodeLine> *moreLines,
@@ -288,7 +235,7 @@ string Console::genAppendix(const char *line,
 	bool wasExpr = false;
 	string appendix;
 	string funcBody;
-	string src = genSource("");
+	string src = source;
 	clang::SourceManager sm;
 
 	while (isspace(*line)) line++;
@@ -338,24 +285,34 @@ void Console::process(const char *line)
 	std::vector<CodeLine> linesToAppend;
 	bool hadErrors;
 	string appendix;
-	string src;
+	string src = genSource("");	
+
 
 	_buffer += line;
 	Parser p(_options);
 	int indentLevel;
-	if (!p.analyzeInput(_buffer, indentLevel)) {
-		// TODO: handle parse error!
-		_input = string(indentLevel * 2, ' ');
-		_prompt = "... ";
-		return;
+	bool shouldBeTopLevel = false;
+	switch (p.analyzeInput(src, _buffer, indentLevel)) {
+		case Parser::Incomplete:
+			_input = string(indentLevel * 2, ' ');
+			_prompt = "... ";
+			return;
+		case Parser::TopLevel:
+			puts("Top level!");
+			shouldBeTopLevel = true;
+			/* FALL THROUGH */
+		case Parser::Stmt:
+			_prompt = ">>> ";
+			_input = "";
+			break;
 	}
-	_prompt = ">>> ";
-	_input = "";
 
-	// process the input
-	// TODO: figure out if input is a function, or a struct declaration, or
-	//       something else that must exist in a global scope and act accordingly
-	appendix = genAppendix(_buffer.c_str(), &fName, retType, &linesToAppend, &hadErrors);
+	if (shouldBeTopLevel) {
+		appendix = _buffer;
+		// TODO: add declaration for function!!
+	} else {
+		appendix = genAppendix(src.c_str(), _buffer.c_str(), &fName, retType, &linesToAppend, &hadErrors);
+	}
 	_buffer.clear();
 
 	if (hadErrors)
