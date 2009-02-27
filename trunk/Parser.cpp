@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <stack>
+#include <algorithm>
 
 #include <llvm/Config/config.h>
 #include <llvm/Support/MemoryBuffer.h>
@@ -31,7 +32,9 @@ clang::ASTContext * Parser::getContext() const
 	return _ast.get();
 }
 
-bool Parser::analyzeInput(const string& buffer, int& indentLevel)
+Parser::InputType Parser::analyzeInput(const string& contextSource,
+                                       const string& buffer,
+                                       int& indentLevel)
 {
 	llvm::MemoryBuffer *mb =
 		llvm::MemoryBuffer::getMemBufferCopy(&*buffer.begin(), &*buffer.end(), "");
@@ -50,47 +53,48 @@ bool Parser::analyzeInput(const string& buffer, int& indentLevel)
 	clang::Diagnostic diag(&pdc);
 	clang::Preprocessor PP(diag, _options, *_target, sm, headers);
 
-	std::stack<clang::Token> S;
+	std::stack<std::pair<clang::Token, clang::Token> > S; // Tok, PrevTok
 
 	indentLevel = 0;
 	PP.EnterMainSourceFile();
 
 	clang::Token Tok, LastTok;
+	bool TokWasDo = false;
 	PP.Lex(Tok);
 	while (Tok.isNot(clang::tok::eof)) {
-		LastTok = Tok;
 		if (Tok.is(clang::tok::l_square)) {
-			S.push(Tok); // [
+			S.push(std::make_pair(Tok, LastTok)); // [
 		} else if (Tok.is(clang::tok::l_paren)) {
-			S.push(Tok); // (
+			S.push(std::make_pair(Tok, LastTok)); // (
 		} else if (Tok.is(clang::tok::l_brace)) {
-			S.push(Tok); // {
+			S.push(std::make_pair(Tok, LastTok)); // {
 			indentLevel++;
 		} else if (Tok.is(clang::tok::r_square)) {
-			if (S.empty() || S.top().isNot(clang::tok::l_square)) {
+			if (S.empty() || S.top().first.isNot(clang::tok::l_square)) {
 				std::cout << "Unmatched [\n";
-				return false;
+				return Incomplete;
 			}
+			TokWasDo = false;
 			S.pop();
 		} else if (Tok.is(clang::tok::r_paren)) {
-			if (S.empty() || S.top().isNot(clang::tok::l_paren)) {
+			if (S.empty() || S.top().first.isNot(clang::tok::l_paren)) {
 				std::cout << "Unmatched (\n";
-				return false;
+				return Incomplete;
 			}
+			TokWasDo = false;
 			S.pop();
 		} else if (Tok.is(clang::tok::r_brace)) {
-			if (S.empty() || S.top().isNot(clang::tok::l_brace)) {
+			if (S.empty() || S.top().first.isNot(clang::tok::l_brace)) {
 				std::cout << "Unmatched {\n";
-				return false;
+				return Incomplete;
 			}
+			TokWasDo = S.top().second.is(clang::tok::kw_do);
 			S.pop();
 			indentLevel--;
 		}
+		LastTok = Tok;
 		PP.Lex(Tok);
 	}
-
-	// TODO: This doesn't work properly on do { ... } while(X);'s, if the user
-	//       ends the input after the }.
 
 	// TODO: We need to properly account for indent-level for blocks that do not
 	//       have braces... such as:
@@ -98,10 +102,13 @@ bool Parser::analyzeInput(const string& buffer, int& indentLevel)
 	//       if (X)
 	//         Y;
 
-	if (LastTok.is(clang::tok::semi) || LastTok.is(clang::tok::r_brace))
-		return S.empty();
+	// TokWasDo is used for do { ... } while (...); loops
+	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
+		if (!S.empty()) return Incomplete;
+		return Stmt;
+	}
 
-	return false;
+	return Incomplete;
 }
 
 void Parser::parse(const string& src,

@@ -77,12 +77,13 @@ private:
 	                    std::string *funcBody,
 	                    std::vector<CodeLine> *moreLines,
 	                    const clang::SourceManager& sm);
-	std::string genAppendix(const char *line,
+	std::string genAppendix(const char *source,
+	                        const char *line,
 	                        std::string *fName,
 	                        clang::QualType& QT,
 	                        std::vector<CodeLine> *moreLines,
 	                        bool *hadErrors);
-	std::string genSource(std::string appendix);
+	std::string genSource(std::string appendix) const;
 	clang::Stmt * lineToStmt(std::string line,
 	                         clang::SourceManager *sm,
 	                         std::string *src);

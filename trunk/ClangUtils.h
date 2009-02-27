@@ -1,7 +1,16 @@
 #ifndef CCONS_CLANG_UTILS_H
 #define CCONS_CLANG_UTILS_H
 
-#include <clang/Basic/Diagnostic.h>
+#include <llvm/ADT/OwningPtr.h>
+
+#include <clang/AST/AST.h>
+#include <clang/AST/ASTConsumer.h>
+
+namespace clang {
+	class Diagnostic;
+	class SourceManager;
+} // namespace clang
+
 
 namespace ccons {
 
@@ -22,6 +31,46 @@ private:
 	bool _hadErrors;
 
 };
+
+
+class StmtFinder : public clang::StmtVisitor<StmtFinder> {
+
+public:
+
+	explicit StmtFinder(unsigned pos, const clang::SourceManager& sm);
+	~StmtFinder();
+
+	void VisitChildren(clang::Stmt *S);
+	void VisitStmt(clang::Stmt *S);
+	clang::Stmt * getStmt();
+
+private:
+
+	unsigned _pos;
+	const clang::SourceManager& _sm;
+	clang::Stmt *_S;
+
+};
+
+
+
+class FunctionBodyConsumer : public clang::ASTConsumer {
+
+public:
+
+	explicit FunctionBodyConsumer(StmtFinder *SF);
+	~FunctionBodyConsumer();
+
+	void HandleTopLevelDecl(clang::Decl *D);
+	bool seenFunction() const;
+
+private:
+
+	StmtFinder *_SF;
+	bool _seenFunction;
+
+};
+
 
 } // namespace ccons
 
