@@ -14,13 +14,14 @@ void ProxyDiagnosticClient::HandleDiagnostic(
 	clang::Diagnostic::Level DiagLevel,
 	const clang::DiagnosticInfo &Info)
 {
+	if (DiagLevel == clang::Diagnostic::Error)
+		_hadErrors = true;
+
 	if (!_DC || _hadErrors) return;
 
 	if (Info.getID() != clang::diag::warn_unused_expr &&
 	    Info.getID() != clang::diag::pp_macro_not_used)
 		_DC->HandleDiagnostic(DiagLevel, Info);
-	if (DiagLevel == clang::Diagnostic::Error)
-		_hadErrors = true;
 }
 
 bool ProxyDiagnosticClient::hadErrors() const

@@ -129,11 +129,12 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 			clang::SourceManager *sm;
 			clang::FunctionDecl *FD;
 			void HandleTopLevelDecl(clang::Decl *D) {
-				clang::SourceLocation Loc = D->getLocation();
-				unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
-				// FIXME: this logic is messed up
-				if (offset > pos && offset < maxPos) {
-					FD = dyn_cast<clang::FunctionDecl>(D);
+				if (clang::FunctionDecl *FuD = dyn_cast<clang::FunctionDecl>(D)) {
+					clang::SourceLocation Loc = FuD->getTypeSpecStartLoc();
+					unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
+					if (offset == pos) {
+						this->FD = FuD;
+					}
 				}
 			}
 		} consumer;

@@ -29,7 +29,7 @@ public:
 
 	explicit Parser(const clang::LangOptions& options);
 
-	enum InputType { Incomplete, TopLevel, Stmt}; 
+	enum InputType { Incomplete, TopLevel, Stmt }; 
 
 	InputType analyzeInput(const std::string& contextSource,
 	                       const std::string& buffer,
