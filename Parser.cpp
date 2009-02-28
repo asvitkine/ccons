@@ -43,13 +43,8 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
                                        int& indentLevel,
                                        const clang::FunctionDecl*& FD)
 {
-	llvm::MemoryBuffer *mb =
-		llvm::MemoryBuffer::getMemBufferCopy(&*buffer.begin(), &*buffer.end(), "");
-	assert(mb && "Error creating MemoryBuffer!");
 	clang::SourceManager sm;
-	sm.createMainFileIDForMemBuffer(mb);
-	assert(!sm.getMainFileID().isInvalid() && "Error creating MainFileID!");
-
+	createMemoryBuffer(buffer, "", &sm);
 	clang::FileManager fm;
 	clang::HeaderSearch headers(fm);
 	clang::InitHeaderSearch ihs(headers);
@@ -162,12 +157,7 @@ void Parser::parse(const string& src,
                    clang::Diagnostic *diag,
                    clang::ASTConsumer *consumer)
 {
-	llvm::MemoryBuffer *mb =
-		llvm::MemoryBuffer::getMemBufferCopy(&*src.begin(), &*src.end(), "Main");
-	assert(mb && "Error creating MemoryBuffer!");
-	sm->createMainFileIDForMemBuffer(mb);
-	assert(!sm->getMainFileID().isInvalid() && "Error creating MainFileID!");
-
+	createMemoryBuffer(src, "Main", sm);
 	clang::HeaderSearch headers(_fm);
 	clang::InitHeaderSearch ihs(headers);
 	ihs.AddDefaultEnvVarPaths(_options);
@@ -180,6 +170,18 @@ void Parser::parse(const string& src,
 	_tu.reset(new clang::TranslationUnit(*_ast));
 
 	clang::ParseAST(*_pp, consumer, _tu.get());
+}
+
+llvm::MemoryBuffer * Parser::createMemoryBuffer(const string& src,
+                                                const char *name,
+                                                clang::SourceManager *sm)
+{
+	llvm::MemoryBuffer *mb =
+		llvm::MemoryBuffer::getMemBufferCopy(&*src.begin(), &*src.end(), name);
+	assert(mb && "Error creating MemoryBuffer!");
+	sm->createMainFileIDForMemBuffer(mb);
+	assert(!sm->getMainFileID().isInvalid() && "Error creating MainFileID!");
+	return mb;
 }
 
 } // namespace ccons
