@@ -13,6 +13,7 @@ namespace clang {
 	class ASTConsumer;
 	class ASTContext;
 	class Diagnostic;
+	class FunctionDecl;
 	class Preprocessor;
 	class SourceManager;
 	class TargetInfo;
@@ -32,7 +33,8 @@ public:
 
 	InputType analyzeInput(const std::string& contextSource,
 	                       const std::string& buffer,
-	                       int& indentLevel);
+	                       int& indentLevel,
+	                       const clang::FunctionDecl*& FD);
 	void parse(const std::string& source,
 						 clang::SourceManager *sm,
 	           clang::Diagnostic *diag,

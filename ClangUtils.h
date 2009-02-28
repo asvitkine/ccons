@@ -37,12 +37,12 @@ class StmtFinder : public clang::StmtVisitor<StmtFinder> {
 
 public:
 
-	explicit StmtFinder(unsigned pos, const clang::SourceManager& sm);
+	StmtFinder(unsigned pos, const clang::SourceManager& sm);
 	~StmtFinder();
 
 	void VisitChildren(clang::Stmt *S);
 	void VisitStmt(clang::Stmt *S);
-	clang::Stmt * getStmt();
+	clang::Stmt * getStmt() const;
 
 private:
 
@@ -51,7 +51,6 @@ private:
 	clang::Stmt *_S;
 
 };
-
 
 
 class FunctionBodyConsumer : public clang::ASTConsumer {

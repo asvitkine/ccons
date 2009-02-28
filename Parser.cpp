@@ -11,11 +11,17 @@
 #include <clang/AST/TranslationUnit.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Driver/InitHeaderSearch.h>
+#include <clang/Driver/TextDiagnosticPrinter.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/ParseAST.h>
 
+#include <clang/Basic/TargetInfo.h>
+#include <clang/Basic/Diagnostic.h>
+
+
 #include "ClangUtils.h"
+#include "SrcGen.h"
 
 using std::string;
 
@@ -34,7 +40,8 @@ clang::ASTContext * Parser::getContext() const
 
 Parser::InputType Parser::analyzeInput(const string& contextSource,
                                        const string& buffer,
-                                       int& indentLevel)
+                                       int& indentLevel,
+                                       const clang::FunctionDecl*& FD)
 {
 	llvm::MemoryBuffer *mb =
 		llvm::MemoryBuffer::getMemBufferCopy(&*buffer.begin(), &*buffer.end(), "");
@@ -101,10 +108,49 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	//
 	//       if (X)
 	//         Y;
+	//
+	// TODO: Do-while without braces doesn't work, e.g.:
+	//
+	//       do
+	//         foo();
+	//       while (bar());
+	//
+	// Both of the above could be solved by some kind of rewriter-pass that would
+	// insert implicit braces (or simply a more involved analysis).
 
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (!S.empty()) return Incomplete;
+		// FIXME: send diagnostics to /dev/null
+		clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
+		ProxyDiagnosticClient pdc(NULL);
+		clang::Diagnostic diag(&pdc);
+		diag.setSuppressSystemWarnings(true);
+		string src = contextSource + buffer;
+		clang::SourceManager sm;
+		struct : public clang::ASTConsumer {
+			unsigned pos;
+			unsigned maxPos;
+			clang::SourceManager *sm;
+			clang::FunctionDecl *FD;
+			void HandleTopLevelDecl(clang::Decl *D) {
+				clang::SourceLocation Loc = D->getLocation();
+				unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
+				// FIXME: this logic is messed up
+				if (offset > pos && offset < maxPos) {
+					FD = dyn_cast<clang::FunctionDecl>(D);
+				}
+			}
+		} consumer;
+		consumer.pos = contextSource.length();
+		consumer.maxPos = consumer.pos + buffer.length();
+		consumer.sm = &sm;
+		consumer.FD = NULL;
+		parse(src, &sm, &diag, &consumer);
+		if (!pdc.hadErrors() && consumer.FD) {
+			FD = consumer.FD;
+			return TopLevel;
+		}
 		return Stmt;
 	}
 

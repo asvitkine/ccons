@@ -69,8 +69,8 @@ private:
 
 	void printGV(const llvm::Function *F,
 	             const llvm::GenericValue& GV,
-	             const clang::QualType& QT);
-	SrcRange getStmtRange(const clang::Stmt *S, const clang::SourceManager& sm);
+	             const clang::QualType& QT) const;
+	SrcRange getStmtRange(const clang::Stmt *S, const clang::SourceManager& sm) const;
 	bool handleDeclStmt(const clang::DeclStmt *DS,
 	                    const std::string& src,
 	                    std::string *appendix,
@@ -91,7 +91,7 @@ private:
 	bool _debugMode;
 	std::ostream& _out;
 	std::ostream& _err;
-	llvm::raw_os_ostream _raw_err;
+	mutable llvm::raw_os_ostream _raw_err;
 	clang::LangOptions _options;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
