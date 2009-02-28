@@ -51,6 +51,10 @@ private:
 	llvm::OwningPtr<clang::TranslationUnit> _tu;
 	llvm::OwningPtr<clang::ASTContext> _ast;
 
+	static llvm::MemoryBuffer * createMemoryBuffer(const std::string& src,
+	                                               const char *name,
+	                                               clang::SourceManager *sm);
+
 };
 
 } // namespace ccons
