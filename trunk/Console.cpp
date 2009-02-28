@@ -109,7 +109,7 @@ clang::Stmt * Console::lineToStmt(std::string line,
 
 void Console::printGV(const llvm::Function *F,
                       const llvm::GenericValue& GV,
-                      const clang::QualType& QT)
+                      const clang::QualType& QT) const
 {
 	const char *type = QT.getAsString().c_str();
 	const llvm::FunctionType *FTy = F->getFunctionType();
@@ -148,7 +148,7 @@ void Console::printGV(const llvm::Function *F,
 }
 
 Console::SrcRange Console::getStmtRange(const clang::Stmt *S,
-                                        const clang::SourceManager& sm)
+                                        const clang::SourceManager& sm) const
 {
 	clang::SourceLocation SLoc = sm.getInstantiationLoc(S->getLocStart());
 	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
@@ -283,7 +283,7 @@ void Console::process(const char *line)
 	string fName;
 	clang::QualType retType(0, 0);
 	std::vector<CodeLine> linesToAppend;
-	bool hadErrors;
+	bool hadErrors = false;
 	string appendix;
 	string src = genSource("");	
 
@@ -291,16 +291,16 @@ void Console::process(const char *line)
 	_buffer += line;
 	Parser p(_options);
 	int indentLevel;
+	const clang::FunctionDecl *FD;
 	bool shouldBeTopLevel = false;
-	switch (p.analyzeInput(src, _buffer, indentLevel)) {
+	// TODO: split input! (if multiple statements on a single line)
+	switch (p.analyzeInput(src, _buffer, indentLevel, FD)) {
 		case Parser::Incomplete:
 			_input = string(indentLevel * 2, ' ');
 			_prompt = "... ";
 			return;
 		case Parser::TopLevel:
-			puts("Top level!");
 			shouldBeTopLevel = true;
-			/* FALL THROUGH */
 		case Parser::Stmt:
 			_prompt = ">>> ";
 			_input = "";
@@ -309,7 +309,7 @@ void Console::process(const char *line)
 
 	if (shouldBeTopLevel) {
 		appendix = _buffer;
-		// TODO: add declaration for function!!
+		linesToAppend.push_back(CodeLine(getFunctionDeclAsString(FD), DeclLine));
 	} else {
 		appendix = genAppendix(src.c_str(), _buffer.c_str(), &fName, retType, &linesToAppend, &hadErrors);
 	}

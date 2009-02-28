@@ -44,4 +44,13 @@ string genFunc(const clang::QualType *retType,
 	return func;
 }
 
+std::string getFunctionDeclAsString(const clang::FunctionDecl *FD)
+{
+	const clang::FunctionType *FT = FD->getType()->getAsFunctionType();
+	string str = FD->getNameAsString();
+	FT->getAsStringInternal(str);
+	str += ";";
+	return str;
+}
+
 } // namespace ccons

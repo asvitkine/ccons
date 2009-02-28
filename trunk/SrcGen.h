@@ -6,6 +6,7 @@
 namespace clang {
 	class ASTContext;
 	class QualType;
+	class FunctionDecl;
 } // namespace clang
 
 namespace ccons {
@@ -17,6 +18,7 @@ std::string genFunc(const clang::QualType *retType,
                     clang::ASTContext *context,
                     const std::string& fName,
                     const std::string& fBody);
+std::string getFunctionDeclAsString(const clang::FunctionDecl *FD);
 
 } // namespace ccons
 
