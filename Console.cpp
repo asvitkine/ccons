@@ -18,16 +18,14 @@
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Basic/TargetInfo.h>
-#include <clang/Basic/Diagnostic.h>
 #include <clang/Frontend/CompileOptions.h>
-#include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/CodeGen/ModuleBuilder.h>
 #include <clang/Lex/Preprocessor.h>
-#include <clang/Sema/SemaDiagnostic.h>
 
+#include "ClangUtils.h"
+#include "Diagnostics.h"
 #include "Parser.h"
 #include "SrcGen.h"
-#include "ClangUtils.h"
 #include "StringUtils.h"
 
 using std::string;
@@ -87,19 +85,13 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	*src += line;
 	*src += "\n}\n";
 
-	clang::TextDiagnosticPrinter tdp(_raw_err, false, true, false);
-	ProxyDiagnosticClient pdc(&tdp);
-	clang::Diagnostic diag(&pdc);
-	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
-	                          clang::diag::MAP_ERROR);
-	diag.setSuppressSystemWarnings(true);
-
+	DiagnosticsProvider _dp(_raw_err);
 	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer consumer(&finder);
 	_parser.reset(new Parser(_options));
-	_parser->parse(*src, sm, &diag, &consumer);
+	_parser->parse(*src, sm, _dp.getDiagnostic(), &consumer);
 
-	if (pdc.hadErrors()) {
+	if (_dp.getDiagnostic()->hasErrorOccurred()) {
 		src->clear();
 		return NULL;
 	}
@@ -320,19 +312,14 @@ void Console::process(const char *line)
 
 	src = genSource(appendix);
 
-	clang::TextDiagnosticPrinter tdp(_raw_err, false, true, false);
-	ProxyDiagnosticClient pdc(&tdp);
-	clang::Diagnostic diag(&pdc);
-	diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
-	                          clang::diag::MAP_ERROR);
-	diag.setSuppressSystemWarnings(true);
 
+	DiagnosticsProvider dp(_raw_err);
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
-	codegen.reset(CreateLLVMCodeGen(diag, _options, "-", false));
+	codegen.reset(CreateLLVMCodeGen(*dp.getDiagnostic(), _options, "-", false));
 	clang::SourceManager sm;
 	Parser p2(_options); // we keep the other parser around because of QT...
-	p2.parse(src, &sm, &diag, codegen.get());
-	if (pdc.hadErrors()) {
+	p2.parse(src, &sm, dp.getDiagnostic(), codegen.get());
+	if (dp.getDiagnostic()->hasErrorOccurred()) {
 		_err << "\nNote: Last line ignored due to errors.\n";
 		return;
 	}
