@@ -19,8 +19,8 @@
 #include <clang/Basic/SourceManager.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/Diagnostic.h>
-#include <clang/Driver/CompileOptions.h>
-#include <clang/Driver/TextDiagnosticPrinter.h>
+#include <clang/Frontend/CompileOptions.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/CodeGen/ModuleBuilder.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/SemaDiagnostic.h>

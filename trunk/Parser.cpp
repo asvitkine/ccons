@@ -10,8 +10,8 @@
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/TranslationUnit.h>
 #include <clang/Basic/TargetInfo.h>
-#include <clang/Driver/InitHeaderSearch.h>
-#include <clang/Driver/TextDiagnosticPrinter.h>
+#include <clang/Frontend/InitHeaderSearch.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/ParseAST.h>

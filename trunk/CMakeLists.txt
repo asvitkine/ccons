@@ -11,7 +11,7 @@ exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs engine backend linker bitread
 set(LLVM_LIBS "-ldl ${LLVM_LIBS1}")
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags OUTPUT_VARIABLE LLVM_LDFLAGS)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
-set(CLANG_LIBS "-lclangDriver -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic")
+set(CLANG_LIBS "-lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic")
 
 Project(ccons)
 
