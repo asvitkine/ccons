@@ -30,6 +30,7 @@ namespace clang {
 namespace ccons {
 
 class Parser;
+class DiagnosticsProvider;
 
 class IConsole {
 
@@ -96,6 +97,7 @@ private:
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<Parser> _parser;
+	llvm::OwningPtr<DiagnosticsProvider> _dp;
 	std::vector<CodeLine> _lines;
 	std::string _buffer;
 	std::string _prompt;

@@ -85,13 +85,13 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	*src += line;
 	*src += "\n}\n";
 
-	DiagnosticsProvider _dp(_raw_err);
+	_dp->setOffset(pos);
 	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer consumer(&finder);
 	_parser.reset(new Parser(_options));
-	_parser->parse(*src, sm, _dp.getDiagnostic(), &consumer);
+	_parser->parse(*src, sm, _dp->getDiagnostic(), &consumer);
 
-	if (_dp.getDiagnostic()->hasErrorOccurred()) {
+	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		src->clear();
 		return NULL;
 	}
@@ -262,7 +262,9 @@ string Console::genAppendix(const char *source,
 		for (unsigned i = 0; i < _lines.size(); ++i)
 			funcNo += (_lines[i].second == StmtLine);
 		*fName = "__ccons_anon" + to_string(funcNo);
-		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody);
+		int bodyOffset;
+		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody, bodyOffset);
+		_dp->setOffset(bodyOffset + strlen(source));
 		if (_debugMode)
 			oprintf(_err, "Generating function %s()...\n", fName->c_str());
 	}
@@ -278,7 +280,6 @@ void Console::process(const char *line)
 	bool hadErrors = false;
 	string appendix;
 	string src = genSource("");	
-
 
 	_buffer += line;
 	Parser p(_options);
@@ -299,6 +300,8 @@ void Console::process(const char *line)
 			break;
 	}
 
+	_dp.reset(new DiagnosticsProvider(_raw_err));
+
 	if (shouldBeTopLevel) {
 		appendix = _buffer;
 		linesToAppend.push_back(CodeLine(getFunctionDeclAsString(FD), DeclLine));
@@ -311,15 +314,12 @@ void Console::process(const char *line)
 		return;
 
 	src = genSource(appendix);
-
-
-	DiagnosticsProvider dp(_raw_err);
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
-	codegen.reset(CreateLLVMCodeGen(*dp.getDiagnostic(), _options, "-", false));
+	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), _options, "-", false));
 	clang::SourceManager sm;
 	Parser p2(_options); // we keep the other parser around because of QT...
-	p2.parse(src, &sm, dp.getDiagnostic(), codegen.get());
-	if (dp.getDiagnostic()->hasErrorOccurred()) {
+	p2.parse(src, &sm, _dp->getDiagnostic(), codegen.get());
+	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		_err << "\nNote: Last line ignored due to errors.\n";
 		return;
 	}
