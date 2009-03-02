@@ -18,7 +18,8 @@ string genVarDecl(const clang::QualType& type, const string& vName) {
 string genFunc(const clang::QualType *retType,
                clang::ASTContext *context,
                const string& fName,
-               const string& fBody)
+               const string& fBody,
+               int& bodyOffset)
 {
 	string func;
 	if (!retType || (*retType)->isStructureType()) {
@@ -39,6 +40,7 @@ string genFunc(const clang::QualType *retType,
 			func = decl + "{\nreturn ";
 		}
 	}
+	bodyOffset = func.length();
 	func += fBody;
 	func += "\n}\n";
 	return func;

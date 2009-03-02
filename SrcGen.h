@@ -17,7 +17,8 @@ std::string genVarDecl(const clang::QualType& type, const std::string& vName);
 std::string genFunc(const clang::QualType *retType,
                     clang::ASTContext *context,
                     const std::string& fName,
-                    const std::string& fBody);
+                    const std::string& fBody,
+                    int& bodyOffset);
 std::string getFunctionDeclAsString(const clang::FunctionDecl *FD);
 
 } // namespace ccons
