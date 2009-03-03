@@ -64,6 +64,8 @@ void gotsig(int signo)
 		str = "Bus error\n";
 	} else if (signo == SIGSEGV) {
 		str = "Segmentation fault\n";
+	} else if (signo == SIGABRT) {
+		str = "Abort trap\n";
 	}
 
 	SerializedConsoleOutput sco("", str, "", "");
@@ -79,12 +81,25 @@ int main(const int argc, char **argv)
 	                                  false/*, "ccons-"*/);
 	// TODO SetVersionPrinter()
 
+/*
+	TODO:
+	Loading of external lib:
+	#include <llvm/System/DynamicLibrary.h>
+	char *libz = "/usr/lib/libz.dylib";
+	llvm::sys::Path path(libz);
+	if (path.isDynamicLibrary()) {
+		std::string errMsg;
+		llvm::sys::DynamicLibrary::LoadLibraryPermanently(libz, &errMsg);
+	}
+*/
+
 	if (DebugMode) {
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
 		llvm::sys::PrintStackTraceOnErrorSignal();
 	} else if (SerializedOutput) {
 		signal(SIGBUS, gotsig);
 		signal(SIGSEGV, gotsig);
+		signal(SIGABRT, gotsig);
 	} else if (MultiProcess) {
 		signal(SIGCHLD, SIG_IGN);
 	}
