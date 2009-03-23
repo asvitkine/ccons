@@ -75,6 +75,15 @@ void gotsig(int signo)
 	exit(-1);
 }
 
+void goodbye(void)
+{
+	string str;
+	SerializedConsoleOutput sco("", "", "", "");
+	sco.writeToString(&str);
+	std::cout << str;
+	std::cout.flush();
+}
+
 int main(const int argc, char **argv)
 {
 	llvm::cl::ParseCommandLineOptions(argc, argv, "ccons Interactive C Console\n",
@@ -100,6 +109,7 @@ int main(const int argc, char **argv)
 		signal(SIGBUS, gotsig);
 		signal(SIGSEGV, gotsig);
 		signal(SIGABRT, gotsig);
+		atexit(goodbye);
 	} else if (MultiProcess) {
 		signal(SIGCHLD, SIG_IGN);
 	}
