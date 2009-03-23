@@ -63,6 +63,8 @@ void RemoteConsole::process(const char *line)
 	SerializedConsoleOutput sco;
 	bool success = sco.readFromStream(_istream);
 	if (success) {
+		if (sco.prompt().empty() && sco.output().empty() && sco.error().empty())
+			exit(0);
 		std::cout << sco.output();
 		std::cerr << sco.error();
 	}

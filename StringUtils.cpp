@@ -19,7 +19,7 @@ void string_printf(std::string *dst, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	vstring_printf(dst, fmt, ap);
-	va_end(ap);  
+	va_end(ap);
 }
 
 void oprintf(std::ostream& out, const char *fmt, ...)
