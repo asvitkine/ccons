@@ -315,7 +315,8 @@ void Console::process(const char *line)
 
 	src = genSource(appendix);
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
-	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), _options, "-", false));
+	clang::CompileOptions compileOptions;
+	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
 	clang::SourceManager sm;
 	Parser p2(_options); // we keep the other parser around because of QT...
 	p2.parse(src, &sm, _dp->getDiagnostic(), codegen.get());
