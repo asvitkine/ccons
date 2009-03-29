@@ -5,10 +5,8 @@
 #include <algorithm>
 
 #include <llvm/Config/config.h>
-#include <llvm/Support/MemoryBuffer.h>
 
 #include <clang/AST/ASTConsumer.h>
-#include <clang/AST/TranslationUnit.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Frontend/InitHeaderSearch.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
@@ -168,9 +166,7 @@ void Parser::parse(const string& src,
 	_pp.reset(new clang::Preprocessor(*diag, _options, *_target, *sm, headers));
 	_ast.reset(new clang::ASTContext(_options, *sm, *_target,
 		_pp->getIdentifierTable(), _pp->getSelectorTable()));
-	_tu.reset(new clang::TranslationUnit(*_ast));
-
-	clang::ParseAST(*_pp, consumer, _tu.get());
+	clang::ParseAST(*_pp, consumer, *_ast);
 }
 
 llvm::MemoryBuffer * Parser::createMemoryBuffer(const string& src,

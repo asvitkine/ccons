@@ -4,8 +4,8 @@
 #include <string>
 
 #include <llvm/ADT/OwningPtr.h>
+#include <llvm/Support/MemoryBuffer.h>
 
-#include <clang/AST/TranslationUnit.h>
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/FileManager.h>
 
@@ -17,7 +17,6 @@ namespace clang {
 	class Preprocessor;
 	class SourceManager;
 	class TargetInfo;
-	class TranslationUnit;
 } // namespace clang
 
 
@@ -48,7 +47,6 @@ private:
 	clang::FileManager _fm;
 	llvm::OwningPtr<clang::TargetInfo> _target;
 	llvm::OwningPtr<clang::Preprocessor> _pp;
-	llvm::OwningPtr<clang::TranslationUnit> _tu;
 	llvm::OwningPtr<clang::ASTContext> _ast;
 
 	static llvm::MemoryBuffer * createMemoryBuffer(const std::string& src,
