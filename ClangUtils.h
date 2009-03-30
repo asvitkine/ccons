@@ -5,6 +5,7 @@
 
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTConsumer.h>
+#include <clang/AST/DeclGroup.h>
 
 namespace clang {
 	class Diagnostic;
@@ -60,7 +61,7 @@ public:
 	explicit FunctionBodyConsumer(StmtFinder *SF);
 	~FunctionBodyConsumer();
 
-	void HandleTopLevelDecl(clang::Decl *D);
+	void HandleTopLevelDecl(clang::DeclGroupRef D);
 	bool seenFunction() const;
 
 private:
