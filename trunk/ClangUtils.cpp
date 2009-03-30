@@ -69,11 +69,14 @@ FunctionBodyConsumer::~FunctionBodyConsumer()
 {
 }
 
-void FunctionBodyConsumer::HandleTopLevelDecl(clang::Decl *D) {
-	if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(D)) {
-		if (clang::Stmt *S = FD->getBody()) {
-			_SF->VisitChildren(S);
-			_seenFunction = true;
+void FunctionBodyConsumer::HandleTopLevelDecl(clang::DeclGroupRef D)
+{
+	for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
+		if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
+			if (clang::Stmt *S = FD->getBody()) {
+				_SF->VisitChildren(S);
+				_seenFunction = true;
+			}
 		}
 	}
 }

@@ -237,6 +237,8 @@ string Console::genAppendix(const char *source,
 		moreLines->push_back(CodeLine(line, PrprLine));
 		appendix += line;
 	} else if (const clang::Stmt *S = lineToStmt(line, &sm, &src)) {
+		if (_debugMode)
+			oprintf(_err, "Found Stmt for input.\n");
 		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
 			QT = E->getType();
 			funcBody = line;
@@ -303,9 +305,13 @@ void Console::process(const char *line)
 	_dp.reset(new DiagnosticsProvider(_raw_err));
 
 	if (shouldBeTopLevel) {
+		if (_debugMode)
+			oprintf(_err, "Treating input as top-level.\n");
 		appendix = _buffer;
 		linesToAppend.push_back(CodeLine(getFunctionDeclAsString(FD), DeclLine));
 	} else {
+		if (_debugMode)
+			oprintf(_err, "Treating input as function-level.\n");
 		appendix = genAppendix(src.c_str(), _buffer.c_str(), &fName, retType, &linesToAppend, &hadErrors);
 	}
 	_buffer.clear();
@@ -314,6 +320,10 @@ void Console::process(const char *line)
 		return;
 
 	src = genSource(appendix);
+
+	if (_debugMode)
+		oprintf(_err, "Running code-generator.\n");
+
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CompileOptions compileOptions;
 	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
@@ -348,7 +358,13 @@ void Console::process(const char *line)
 			llvm::GenericValue result = _engine->runFunction(F, params);
 			if (retType.getTypePtr())
 				printGV(F, result, retType);
+		} else {
+			if (_debugMode)
+				oprintf(_err, "Code generation done; function call not needed.\n");
 		}
+	} else {
+		if (_debugMode)
+			oprintf(_err, "Could not release module.\n");
 	}
 
 	_parser.reset();
