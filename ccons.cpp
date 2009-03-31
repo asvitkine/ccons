@@ -58,16 +58,8 @@ static LineReader * createReader()
 
 void gotsig(int signo)
 {
-	string str;
-
-	if (signo == SIGBUS) {
-		str = "Bus error\n";
-	} else if (signo == SIGSEGV) {
-		str = "Segmentation fault\n";
-	} else if (signo == SIGABRT) {
-		str = "Abort trap\n";
-	}
-
+	string str = strsignal(signo);
+	str += "\n";
 	SerializedConsoleOutput sco("", str, "", "");
 	sco.writeToString(&str);
 	std::cout << str;
@@ -109,6 +101,12 @@ int main(const int argc, char **argv)
 		signal(SIGBUS, gotsig);
 		signal(SIGSEGV, gotsig);
 		signal(SIGABRT, gotsig);
+		signal(SIGTRAP, gotsig);
+		signal(SIGILL, gotsig);
+		signal(SIGFPE, gotsig);
+		signal(SIGSYS, gotsig);
+		signal(SIGXCPU, gotsig);
+		signal(SIGXFSZ, gotsig);
 		atexit(goodbye);
 	} else if (MultiProcess) {
 		signal(SIGCHLD, SIG_IGN);
