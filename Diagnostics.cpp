@@ -13,6 +13,8 @@ DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out)
 	                           clang::diag::MAP_ERROR);
 	_diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
 	                           clang::diag::MAP_IGNORE);
+	_diag.setDiagnosticMapping(clang::diag::warn_missing_prototype,
+	                           clang::diag::MAP_IGNORE);
 	_diag.setDiagnosticMapping(clang::diag::pp_macro_not_used,
 	                           clang::diag::MAP_IGNORE);
 	_diag.setSuppressSystemWarnings(true);
