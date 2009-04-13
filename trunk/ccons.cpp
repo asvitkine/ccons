@@ -2,8 +2,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <signal.h>
-
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/CommandLine.h>
@@ -17,10 +15,10 @@ using std::string;
 using ccons::Console;
 using ccons::IConsole;
 using ccons::RemoteConsole;
+using ccons::SerializedOutputConsole;
 using ccons::LineReader;
 using ccons::EditLineReader;
 using ccons::StdInLineReader;
-using ccons::SerializedConsoleOutput;
 
 static llvm::cl::opt<bool>
 	DebugMode("ccons-debug",
@@ -41,9 +39,9 @@ static std::stringstream ss_err;
 static IConsole * createConsole()
 {
 	if (MultiProcess)
-		return new RemoteConsole;
+		return new RemoteConsole(DebugMode);
 	else if (SerializedOutput)
-		return new Console(DebugMode, ss_out, ss_err);		
+		return new SerializedOutputConsole(DebugMode);		
 	else
 		return new Console(DebugMode);
 }
@@ -54,26 +52,6 @@ static LineReader * createReader()
 		return new StdInLineReader;
 	else
 		return new EditLineReader;
-}
-
-void gotsig(int signo)
-{
-	string str = strsignal(signo);
-	str += "\n";
-	SerializedConsoleOutput sco("", str, "", "");
-	sco.writeToString(&str);
-	std::cout << str;
-	std::cout.flush();
-	exit(-1);
-}
-
-void goodbye(void)
-{
-	string str;
-	SerializedConsoleOutput sco("", "", "", "");
-	sco.writeToString(&str);
-	std::cout << str;
-	std::cout.flush();
 }
 
 int main(const int argc, char **argv)
@@ -97,19 +75,6 @@ int main(const int argc, char **argv)
 	if (DebugMode) {
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
 		llvm::sys::PrintStackTraceOnErrorSignal();
-	} else if (SerializedOutput) {
-		signal(SIGBUS, gotsig);
-		signal(SIGSEGV, gotsig);
-		signal(SIGABRT, gotsig);
-		signal(SIGTRAP, gotsig);
-		signal(SIGILL, gotsig);
-		signal(SIGFPE, gotsig);
-		signal(SIGSYS, gotsig);
-		signal(SIGXCPU, gotsig);
-		signal(SIGXFSZ, gotsig);
-		atexit(goodbye);
-	} else if (MultiProcess) {
-		signal(SIGCHLD, SIG_IGN);
 	}
 
 	llvm::OwningPtr<IConsole> console(createConsole());
@@ -118,16 +83,6 @@ int main(const int argc, char **argv)
 	const char *line = reader->readLine(console->prompt(), console->input());
 	while (line) {
 		console->process(line);
-		if (SerializedOutput) {
-			string str;
-			SerializedConsoleOutput sco(ss_out.str(), ss_err.str(),
-																	console->prompt(), console->input());
-      sco.writeToString(&str);
-			std::cout << str;
-			std::cout.flush();
-			ss_out.str("");
-			ss_err.str("");
-		}
 		line = reader->readLine(console->prompt(), console->input());
 	}
 
