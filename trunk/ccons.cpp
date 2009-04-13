@@ -72,7 +72,7 @@ int main(const int argc, char **argv)
 	}
 */
 
-	if (DebugMode) {
+	if (DebugMode && !SerializedOutput) {
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
 		llvm::sys::PrintStackTraceOnErrorSignal();
 	}

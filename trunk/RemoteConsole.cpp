@@ -157,7 +157,8 @@ const std::string& SerializedConsoleOutput::input() const
 // RemoteConsole
 //
 
-RemoteConsole::RemoteConsole(bool DebugMode)
+RemoteConsole::RemoteConsole(bool DebugMode) :
+	_DebugMode(DebugMode)
 {
 	signal(SIGCHLD, SIG_IGN);
 	reset();
@@ -183,9 +184,11 @@ void RemoteConsole::cleanup()
 void RemoteConsole::reset()
 {
 	// TODO: check for errors!
-	// ALSO pass --ccons-debug if DebugMode is on...
 	int infp, outfp;
-	popen2("./ccons --ccons-use-std-io --ccons-serialized-output", &infp, &outfp);
+	if (_DebugMode)
+		popen2("./ccons --ccons-debug --ccons-use-std-io --ccons-serialized-output", &infp, &outfp);
+	else
+		popen2("./ccons --ccons-use-std-io --ccons-serialized-output", &infp, &outfp);
 	_ostream = fdopen(infp, "w");
 	setlinebuf(_ostream);
 	_istream = fdopen(outfp, "r");

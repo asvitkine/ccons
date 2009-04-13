@@ -17,9 +17,11 @@
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/Diagnostic.h>
 
-
 #include "ClangUtils.h"
 #include "SrcGen.h"
+
+// Temporary Hax:
+#include "InitPP.cpp"
 
 using std::string;
 
@@ -52,6 +54,8 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	ProxyDiagnosticClient pdc(NULL);
 	clang::Diagnostic diag(&pdc);
 	clang::Preprocessor PP(diag, _options, *_target, sm, headers);
+
+	InitializePreprocessor(PP);
 
 	std::stack<std::pair<clang::Token, clang::Token> > S; // Tok, PrevTok
 
@@ -164,6 +168,9 @@ void Parser::parse(const string& src,
 	ihs.Realize();
 
 	_pp.reset(new clang::Preprocessor(*diag, _options, *_target, *sm, headers));
+
+	InitializePreprocessor(*_pp);
+
 	_ast.reset(new clang::ASTContext(_options, *sm, *_target,
 		_pp->getIdentifierTable(), _pp->getSelectorTable()));
 	clang::ParseAST(*_pp, consumer, *_ast);
