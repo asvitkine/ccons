@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string>
+#include <sstream>
 
 #include "Console.h"
 
@@ -12,7 +13,7 @@ class RemoteConsole : public IConsole {
 
 public:
 
-	RemoteConsole();
+	explicit RemoteConsole(bool DebugMode);
 	virtual ~RemoteConsole();
 
 	const char * prompt() const;
@@ -31,32 +32,24 @@ private:
 
 };
 
-class SerializedConsoleOutput {
+
+
+class SerializedOutputConsole: public IConsole {
 
 public:
 
-	SerializedConsoleOutput();
-	SerializedConsoleOutput(const std::string& output,
-	                        const std::string& error,
-	                        const std::string& prompt,
-	                        const std::string& input);
+	explicit SerializedOutputConsole(bool DebugMode);
+	virtual ~SerializedOutputConsole();
 
-	bool readFromStream(FILE *stream);
-	void writeToString(std::string *str) const;
-	
-	const std::string& output() const;
-	const std::string& error() const;
-	const std::string& prompt() const;
-	const std::string& input() const;
+	const char * prompt() const;
+	const char * input() const;
+	void process(const char *line);
 
 private:
 
-	std::string _output;
-	std::string _error;
-	std::string _prompt;
-	std::string _input;
-
-	static bool readEscapedString(FILE *stream, std::string *str);
+	llvm::OwningPtr<IConsole> _console;
+	std::stringstream _ss_out;
+	std::stringstream _ss_err;
 
 };
 
