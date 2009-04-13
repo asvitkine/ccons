@@ -28,7 +28,10 @@ string genFunc(const clang::QualType *retType,
 		// TODO: What about arrays of anonymous types?
 		func = genVarDecl(context->getArrayDecayedType(*retType), fName + "(void)") + "{\nreturn ";
 	} else {
-		string decl = genVarDecl(*retType, fName + "(void)");
+		// prefix is used to promoting a function to a function pointer for
+		// the return value (this conversion is done automatically in C)
+		string prefix = ((*retType)->isFunctionType() ? "*" : "");
+		string decl = genVarDecl(*retType, prefix + fName + "(void)");
 		// TODO: check for anonymous struct a better way
 		if (decl.find("struct <anonymous>") != string::npos) {
 			if ((*retType)->isPointerType()) {

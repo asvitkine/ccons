@@ -22,6 +22,7 @@ public:
 
 private:
 
+	bool _DebugMode;
 	FILE *_ostream;
 	FILE *_istream;
 	std::string _prompt;

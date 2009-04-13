@@ -122,10 +122,16 @@ void Console::printGV(const llvm::Function *F,
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
 			// FIXME: this is a hack
-			if (p && !strncmp(type, "char", 4))
+			if (p && !strncmp(type, "char", 4)) {
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
-			else
+			} else if (QT->isFunctionType()) {
+				string str = "*";
+				QT.getUnqualifiedType().getAsStringInternal(str);
+				type = str.c_str();
 				oprintf(_out, "=> (%s) %p\n", type, p);
+			} else {
+				oprintf(_out, "=> (%s) %p\n", type, p);
+			}
 			return;
 		}
 		case llvm::Type::VoidTyID:
