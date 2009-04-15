@@ -33,44 +33,11 @@ private:
 
 };
 
+typedef std::pair<unsigned, unsigned> SrcRange;
 
-class StmtFinder : public clang::StmtVisitor<StmtFinder> {
-
-public:
-
-	StmtFinder(unsigned pos, const clang::SourceManager& sm);
-	~StmtFinder();
-
-	void VisitChildren(clang::Stmt *S);
-	void VisitStmt(clang::Stmt *S);
-	clang::Stmt * getStmt() const;
-
-private:
-
-	unsigned _pos;
-	const clang::SourceManager& _sm;
-	clang::Stmt *_S;
-
-};
-
-
-class FunctionBodyConsumer : public clang::ASTConsumer {
-
-public:
-
-	explicit FunctionBodyConsumer(StmtFinder *SF);
-	~FunctionBodyConsumer();
-
-	void HandleTopLevelDecl(clang::DeclGroupRef D);
-	bool seenFunction() const;
-
-private:
-
-	StmtFinder *_SF;
-	bool _seenFunction;
-
-};
-
+SrcRange getStmtRange(const clang::Stmt *S,
+                      const clang::SourceManager& sm,
+                      const clang::LangOptions options);
 
 } // namespace ccons
 

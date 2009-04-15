@@ -27,6 +27,7 @@
 #include "Parser.h"
 #include "SrcGen.h"
 #include "StringUtils.h"
+#include "Visitors.h"
 
 using std::string;
 
@@ -76,6 +77,36 @@ string Console::genSource(string appendix) const
 	return src;
 }
 
+int Console::splitInput(const string& source,
+                        const string& input,
+                        clang::SourceManager *sm,
+                        std::vector<string> *statements)
+{
+	string src = source;
+	src += "void __ccons_temp() {\n";
+	const unsigned pos = src.length();
+	src += input;
+	src += "\n}\n";
+
+	// Set offset on the diagnostics provider.
+	_dp->setOffset(pos);
+	std::vector<clang::Stmt*> stmts;
+	StmtSplitter splitter(src, *sm, _options, &stmts);
+	FunctionBodyConsumer<StmtSplitter> consumer(&splitter);
+	_parser.reset(new Parser(_options));
+	_parser->parse(src, sm, _dp->getDiagnostic(), &consumer);
+
+	for (unsigned i = 0; i < stmts.size(); i++) {
+		SrcRange range = getStmtRange(stmts[i], *sm, _options);
+		string s = src.substr(range.first, range.second - range.first);
+		if (isa<clang::Expr>(stmts[i]))
+			s += ";";
+		statements->push_back(s);
+	}
+
+	return 1;
+}
+
 clang::Stmt * Console::lineToStmt(std::string line,
                                   clang::SourceManager *sm,
                                   std::string *src)
@@ -85,9 +116,10 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	*src += line;
 	*src += "\n}\n";
 
+	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	StmtFinder finder(pos, *sm);
-	FunctionBodyConsumer consumer(&finder);
+	FunctionBodyConsumer<StmtFinder> consumer(&finder);
 	_parser.reset(new Parser(_options));
 	_parser->parse(*src, sm, _dp->getDiagnostic(), &consumer);
 
@@ -145,17 +177,6 @@ void Console::printGV(const llvm::Function *F,
 	assert(0 && "Unknown return type!");
 }
 
-Console::SrcRange Console::getStmtRange(const clang::Stmt *S,
-                                        const clang::SourceManager& sm) const
-{
-	clang::SourceLocation SLoc = sm.getInstantiationLoc(S->getLocStart());
-	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
-	unsigned start = sm.getFileOffset(SLoc);
-	unsigned end   = sm.getFileOffset(ELoc);
-	end += clang::Lexer::MeasureTokenLength(ELoc, sm, _options);
-	return SrcRange(start, end);
-}
-
 bool Console::handleDeclStmt(const clang::DeclStmt *DS,
                              const string& src,
                              string *appendix,
@@ -180,7 +201,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
 				string decl = genVarDecl(VD->getType(), VD->getNameAsCString());
 				if (const clang::Expr *I = VD->getInit()) {
-					SrcRange range = getStmtRange(I, sm);
+					SrcRange range = getStmtRange(I, sm, _options);
 					if (I->isConstantInitializer(*_parser->getContext())) {
 						// Keep the whole thing in the global context.
 						std::stringstream global;
@@ -196,7 +217,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						for (unsigned i = 0; i < numInits; i++) {
 							std::stringstream stmt;
 							stmt << VD->getNameAsCString() << "[" << i << "] = ";
-							range = getStmtRange(ILE->getInit(i), sm);
+							range = getStmtRange(ILE->getInit(i), sm, _options);
 							stmt << src.substr(range.first, range.second - range.first) << ";";
 							stmts.push_back(stmt.str());
 						}
@@ -237,7 +258,14 @@ string Console::genAppendix(const char *source,
 	clang::SourceManager sm;
 
 	while (isspace(*line)) line++;
-
+/*
+{
+clang::SourceManager mysm;
+std::vector<string> split;
+string input = line;
+splitInput(src, input, &mysm, &split);
+}
+*/
 	*hadErrors = false;
 	if (*line == '#') {
 		moreLines->push_back(CodeLine(line, PrprLine));
@@ -327,6 +355,18 @@ void Console::process(const char *line)
 
 	src = genSource(appendix);
 
+	if (compileLinkAndRun(src, fName, retType)) {
+		for (unsigned i = 0; i < linesToAppend.size(); ++i)
+			_lines.push_back(linesToAppend[i]);
+	}
+
+	_parser.reset();
+}
+
+bool Console::compileLinkAndRun(const string& src,
+                                const string& fName,
+                                const clang::QualType& retType)
+{
 	if (_debugMode)
 		oprintf(_err, "Running code-generator.\n");
 
@@ -338,11 +378,8 @@ void Console::process(const char *line)
 	p2.parse(src, &sm, _dp->getDiagnostic(), codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		_err << "\nNote: Last line ignored due to errors.\n";
-		return;
+		return false;
 	}
-
-	for (unsigned i = 0; i < linesToAppend.size(); ++i)
-		_lines.push_back(linesToAppend[i]);
 
 	llvm::Module *module = codegen->ReleaseModule();
 	if (module) {
@@ -373,7 +410,8 @@ void Console::process(const char *line)
 			oprintf(_err, "Could not release module.\n");
 	}
 
-	_parser.reset();
+	return true;
 }
+
 
 } // namespace ccons

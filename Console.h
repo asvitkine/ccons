@@ -58,8 +58,6 @@ public:
 
 private:
 
-	typedef std::pair<unsigned, unsigned> SrcRange;
-
 	enum LineType {
 		StmtLine,
 		DeclLine,
@@ -71,7 +69,6 @@ private:
 	void printGV(const llvm::Function *F,
 	             const llvm::GenericValue& GV,
 	             const clang::QualType& QT) const;
-	SrcRange getStmtRange(const clang::Stmt *S, const clang::SourceManager& sm) const;
 	bool handleDeclStmt(const clang::DeclStmt *DS,
 	                    const std::string& src,
 	                    std::string *appendix,
@@ -85,9 +82,17 @@ private:
 	                        std::vector<CodeLine> *moreLines,
 	                        bool *hadErrors);
 	std::string genSource(std::string appendix) const;
+	int Console::splitInput(const std::string& source,
+	                        const std::string& input,
+	                        clang::SourceManager *sm,
+	                        std::vector<std::string> *statements);
 	clang::Stmt * lineToStmt(std::string line,
 	                         clang::SourceManager *sm,
 	                         std::string *src);
+
+	bool compileLinkAndRun(const std::string& src,
+                         const std::string& fName,
+                         const clang::QualType& retType);
 
 	bool _debugMode;
 	std::ostream& _out;
