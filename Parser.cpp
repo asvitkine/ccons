@@ -9,7 +9,6 @@
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Frontend/InitHeaderSearch.h>
-#include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/ParseAST.h>
@@ -118,10 +117,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (!S.empty()) return Incomplete;
-		// FIXME: send diagnostics to /dev/null
-		clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
-		tdp.SetLangOpts(_options);
-		ProxyDiagnosticClient pdc(NULL);
+		ProxyDiagnosticClient pdc(NULL); // ignore diagnostics
 		clang::Diagnostic diag(&pdc);
 		diag.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
