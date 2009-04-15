@@ -35,7 +35,7 @@ public:
 	                       int& indentLevel,
 	                       const clang::FunctionDecl*& FD);
 	void parse(const std::string& source,
-						 clang::SourceManager *sm,
+	           clang::SourceManager *sm,
 	           clang::Diagnostic *diag,
 	           clang::ASTConsumer *consumer);
 
