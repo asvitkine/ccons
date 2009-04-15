@@ -19,9 +19,7 @@ void ProxyDiagnosticClient::HandleDiagnostic(
 
 	if (!_DC || _hadErrors) return;
 
-	if (Info.getID() != clang::diag::warn_unused_expr &&
-	    Info.getID() != clang::diag::pp_macro_not_used)
-		_DC->HandleDiagnostic(DiagLevel, Info);
+	_DC->HandleDiagnostic(DiagLevel, Info);
 }
 
 bool ProxyDiagnosticClient::hadErrors() const
