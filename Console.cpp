@@ -152,7 +152,7 @@ Console::SrcRange Console::getStmtRange(const clang::Stmt *S,
 	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
 	unsigned start = sm.getFileOffset(SLoc);
 	unsigned end   = sm.getFileOffset(ELoc);
-	end += clang::Lexer::MeasureTokenLength(ELoc, sm);
+	end += clang::Lexer::MeasureTokenLength(ELoc, sm, _options);
 	return SrcRange(start, end);
 }
 
