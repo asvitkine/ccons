@@ -10,9 +10,22 @@ proc check {input output} {
     } "$output"
 }
 
+proc check2 {input output1 output2} {
+    send "$input\n"
+    expect {
+	timeout {
+	send_user "Failed: input \"$input\" did not result in \"$output1\" \n"
+	send_user "        or in \"$output2\" \n"
+	exit }
+	"$output1" {}
+	"$output2" {}
+    }
+}
+
 spawn ../../ccons
 send "#include <stdio.h>\n"
 send "int (*p)(char const *restrict, ...);\n"
 check "p = printf;"   "=> (int (*)(char const *restrict, ...)) 0x"
 check "p == printf;"  "=> (int) 1"
 check "p != printf;"  "=> (int) 0"
+check2 "puts;" "=> (int (*)(const char *)) 0x" "=> (int (*)(char const *)) 0x"
