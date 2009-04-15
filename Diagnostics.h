@@ -5,6 +5,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 
+#include <clang/Basic/LangOptions.h>
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 
@@ -14,7 +15,7 @@ class DiagnosticsProvider : public clang::DiagnosticClient {
 
 public:
 
-	explicit DiagnosticsProvider(llvm::raw_os_ostream& out);
+	DiagnosticsProvider(llvm::raw_os_ostream& out, const clang::LangOptions& opts);
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
 	                      const clang::DiagnosticInfo &Info);
