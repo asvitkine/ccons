@@ -308,7 +308,7 @@ void Console::process(const char *line)
 			break;
 	}
 
-	_dp.reset(new DiagnosticsProvider(_raw_err));
+	_dp.reset(new DiagnosticsProvider(_raw_err, _options));
 
 	if (shouldBeTopLevel) {
 		if (_debugMode)

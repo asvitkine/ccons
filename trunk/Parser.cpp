@@ -120,6 +120,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		if (!S.empty()) return Incomplete;
 		// FIXME: send diagnostics to /dev/null
 		clang::TextDiagnosticPrinter tdp(llvm::errs(), false, true, false);
+		tdp.SetLangOpts(_options);
 		ProxyDiagnosticClient pdc(NULL);
 		clang::Diagnostic diag(&pdc);
 		diag.setSuppressSystemWarnings(true);
