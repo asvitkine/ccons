@@ -94,15 +94,23 @@ int Console::splitInput(const string& source,
 	StmtSplitter splitter(src, *sm, _options, &stmts);
 	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
 	_parser.reset(new Parser(_options));
+	if (_debugMode)
+		oprintf(_err, "Parsing in splitInput()...\n");
 	_parser->parse(src, sm, _dp->getDiagnostic(), &consumer);
 
-	for (unsigned i = 0; i < stmts.size(); i++) {
-		SrcRange range = getStmtRangeWithSemicolon(stmts[i], *sm, _options);
-		string s = src.substr(range.first, range.second - range.first);
-		statements->push_back(s);
+	if (stmts.size() == 1) {
+		statements->push_back(input);
+	} else {
+		for (unsigned i = 0; i < stmts.size(); i++) {
+			SrcRange range = getStmtRangeWithSemicolon(stmts[i], *sm, _options);
+			string s = src.substr(range.first, range.second - range.first);
+			if (_debugMode)
+				oprintf(_err, "Split %d is: %s\n", i, s.c_str());
+			statements->push_back(s);
+		}
 	}
 
-	return 1;
+	return stmts.size();;
 }
 
 clang::Stmt * Console::lineToStmt(std::string line,
@@ -119,6 +127,8 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
 	_parser.reset(new Parser(_options));
+	if (_debugMode)
+		oprintf(_err, "Parsing in lineToStmt()...\n");
 	_parser->parse(*src, sm, _dp->getDiagnostic(), &consumer);
 
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
@@ -385,6 +395,8 @@ bool Console::compileLinkAndRun(const string& src,
 	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
 	clang::SourceManager sm;
 	Parser p2(_options); // we keep the other parser around because of QT...
+	if (_debugMode)
+		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
 	p2.parse(src, &sm, _dp->getDiagnostic(), codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		_err << "\nNote: Last line ignored due to errors.\n";
