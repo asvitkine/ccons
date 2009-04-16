@@ -28,4 +28,10 @@ check "#include <xyz.abc>" "Note: Last line ignored due to errors."
 send "#define P(x) ((x)+1)\n"
 check "P(5);" "=> (int) 6"
 
+send "#define DO(s) \\n"
+send "do { \\n"
+send   "puts(s); \\n"
+send "} while (0)\n"
+send "#include <stdio.h>"
+check "P(\"Hi\");" "Hi"
 
