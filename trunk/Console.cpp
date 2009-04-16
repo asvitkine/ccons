@@ -97,10 +97,8 @@ int Console::splitInput(const string& source,
 	_parser->parse(src, sm, _dp->getDiagnostic(), &consumer);
 
 	for (unsigned i = 0; i < stmts.size(); i++) {
-		SrcRange range = getStmtRange(stmts[i], *sm, _options);
+		SrcRange range = getStmtRangeWithSemicolon(stmts[i], *sm, _options);
 		string s = src.substr(range.first, range.second - range.first);
-		if (isa<clang::Expr>(stmts[i]))
-			s += ";";
 		statements->push_back(s);
 	}
 
@@ -303,7 +301,6 @@ string Console::genAppendix(const char *source,
 
 void Console::process(const char *line)
 {
-	clang::QualType retType(0, 0);
 	std::vector<CodeLine> linesToAppend;
 	bool hadErrors = false;
 	string appendix;
@@ -341,6 +338,7 @@ void Console::process(const char *line)
 
 		src = genSource(appendix);
 		string empty;
+		clang::QualType retType(0, 0);
 		if (compileLinkAndRun(src, empty, retType)) {
 			for (unsigned i = 0; i < linesToAppend.size(); ++i)
 				_lines.push_back(linesToAppend[i]);
@@ -356,6 +354,7 @@ void Console::process(const char *line)
 
 		for (unsigned i = 0; i < split.size(); i++) {
 			string fName;
+			clang::QualType retType(0, 0);
 			appendix = genAppendix(src.c_str(), split[i].c_str(), &fName, retType, &linesToAppend, &hadErrors);
 			if (hadErrors)
 				return;

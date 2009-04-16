@@ -38,6 +38,9 @@ typedef std::pair<unsigned, unsigned> SrcRange;
 SrcRange getStmtRange(const clang::Stmt *S,
                       const clang::SourceManager& sm,
                       const clang::LangOptions options);
+SrcRange getStmtRangeWithSemicolon(const clang::Stmt *S,
+                                   const clang::SourceManager& sm,
+                                   const clang::LangOptions options);
 
 } // namespace ccons
 
