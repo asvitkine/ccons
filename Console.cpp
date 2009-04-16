@@ -83,7 +83,7 @@ int Console::splitInput(const string& source,
                         std::vector<string> *statements)
 {
 	string src = source;
-	src += "void __ccons_temp() {\n";
+	src += "void __ccons_internal() {\n";
 	const unsigned pos = src.length();
 	src += input;
 	src += "\n}\n";
@@ -92,7 +92,7 @@ int Console::splitInput(const string& source,
 	_dp->setOffset(pos);
 	std::vector<clang::Stmt*> stmts;
 	StmtSplitter splitter(src, *sm, _options, &stmts);
-	FunctionBodyConsumer<StmtSplitter> consumer(&splitter);
+	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
 	_parser.reset(new Parser(_options));
 	_parser->parse(src, sm, _dp->getDiagnostic(), &consumer);
 
@@ -109,7 +109,7 @@ clang::Stmt * Console::lineToStmt(std::string line,
                                   clang::SourceManager *sm,
                                   std::string *src)
 {
-	*src += "void __ccons_temp() {\n";
+	*src += "void __ccons_internal() {\n";
 	const unsigned pos = src->length();
 	*src += line;
 	*src += "\n}\n";
@@ -117,7 +117,7 @@ clang::Stmt * Console::lineToStmt(std::string line,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	StmtFinder finder(pos, *sm);
-	FunctionBodyConsumer<StmtFinder> consumer(&finder);
+	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
 	_parser.reset(new Parser(_options));
 	_parser->parse(*src, sm, _dp->getDiagnostic(), &consumer);
 
@@ -346,10 +346,14 @@ void Console::process(const char *line)
 	} else {
 		if (_debugMode)
 			oprintf(_err, "Treating input as function-level.\n");
-		clang::SourceManager sm;
 		std::vector<string> split;
-		string input = line;
-		splitInput(src, input, &sm, &split);
+		if (line[0] == '#') {
+			split.push_back(_buffer);
+		} else {
+			clang::SourceManager sm;
+			string input = _buffer;
+			splitInput(src, input, &sm, &split);
+		}
 		_buffer.clear();
 
 		for (unsigned i = 0; i < split.size(); i++) {
