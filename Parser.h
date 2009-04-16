@@ -17,6 +17,7 @@ namespace clang {
 	class Preprocessor;
 	class SourceManager;
 	class TargetInfo;
+	class Token;
 } // namespace clang
 
 
@@ -48,6 +49,11 @@ private:
 	llvm::OwningPtr<clang::TargetInfo> _target;
 	llvm::OwningPtr<clang::Preprocessor> _pp;
 	llvm::OwningPtr<clang::ASTContext> _ast;
+
+	unsigned analyzeTokens(clang::Preprocessor& PP,
+	                       clang::Token& LastTok,
+	                       int& indentLevel,
+	                       bool& TokWasDo);
 
 	static llvm::MemoryBuffer * createMemoryBuffer(const std::string& src,
 	                                               const char *name,

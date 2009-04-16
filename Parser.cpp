@@ -60,13 +60,61 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 
 	InitializePreprocessor(PP);
 
+	clang::Token LastTok;
+	bool TokWasDo = false;
+	unsigned stackSize = analyzeTokens(PP, LastTok, indentLevel, TokWasDo);
+
+	// TokWasDo is used for do { ... } while (...); loops
+	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
+		if (stackSize > 0) return Incomplete;
+		ProxyDiagnosticClient pdc(NULL); // ignore diagnostics
+		clang::Diagnostic diag(&pdc);
+		diag.setSuppressSystemWarnings(true);
+		string src = contextSource + buffer;
+		clang::SourceManager sm;
+		struct : public clang::ASTConsumer {
+			unsigned pos;
+			unsigned maxPos;
+			clang::SourceManager *sm;
+			clang::FunctionDecl *FD;
+			void HandleTopLevelDecl(clang::DeclGroupRef D) {
+				for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
+					if (clang::FunctionDecl *FuD = dyn_cast<clang::FunctionDecl>(*I)) {
+						clang::SourceLocation Loc = FuD->getTypeSpecStartLoc();
+						unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
+						if (offset == pos) {
+							this->FD = FuD;
+						}
+					}
+				}
+			}
+		} consumer;
+		consumer.pos = contextSource.length();
+		consumer.maxPos = consumer.pos + buffer.length();
+		consumer.sm = &sm;
+		consumer.FD = NULL;
+		parse(src, &sm, &diag, &consumer);
+		if (!pdc.hadErrors() && consumer.FD) {
+			FD = consumer.FD;
+			return TopLevel;
+		}
+		return Stmt;
+	}
+
+	return Incomplete;
+}
+
+unsigned Parser::analyzeTokens(clang::Preprocessor& PP,
+                               clang::Token& LastTok,
+                               int& indentLevel,
+                               bool& TokWasDo)
+{
 	std::stack<std::pair<clang::Token, clang::Token> > S; // Tok, PrevTok
 
 	indentLevel = 0;
 	PP.EnterMainSourceFile();
 
-	clang::Token Tok, LastTok;
-	bool TokWasDo = false;
+	clang::Token Tok;
 	PP.Lex(Tok);
 	while (Tok.isNot(clang::tok::eof)) {
 		if (Tok.is(clang::tok::l_square)) {
@@ -118,44 +166,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	// Both of the above could be solved by some kind of rewriter-pass that would
 	// insert implicit braces (or simply a more involved analysis).
 
-	// TokWasDo is used for do { ... } while (...); loops
-	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
-		if (!S.empty()) return Incomplete;
-		ProxyDiagnosticClient pdc(NULL); // ignore diagnostics
-		clang::Diagnostic diag(&pdc);
-		diag.setSuppressSystemWarnings(true);
-		string src = contextSource + buffer;
-		clang::SourceManager sm;
-		struct : public clang::ASTConsumer {
-			unsigned pos;
-			unsigned maxPos;
-			clang::SourceManager *sm;
-			clang::FunctionDecl *FD;
-			void HandleTopLevelDecl(clang::DeclGroupRef D) {
-				for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
-					if (clang::FunctionDecl *FuD = dyn_cast<clang::FunctionDecl>(*I)) {
-						clang::SourceLocation Loc = FuD->getTypeSpecStartLoc();
-						unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
-						if (offset == pos) {
-							this->FD = FuD;
-						}
-					}
-				}
-			}
-		} consumer;
-		consumer.pos = contextSource.length();
-		consumer.maxPos = consumer.pos + buffer.length();
-		consumer.sm = &sm;
-		consumer.FD = NULL;
-		parse(src, &sm, &diag, &consumer);
-		if (!pdc.hadErrors() && consumer.FD) {
-			FD = consumer.FD;
-			return TopLevel;
-		}
-		return Stmt;
-	}
-
-	return Incomplete;
+	return S.size();
 }
 
 void Parser::parse(const string& src,
