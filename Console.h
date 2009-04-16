@@ -73,8 +73,7 @@ private:
 	                    const std::string& src,
 	                    std::string *appendix,
 	                    std::string *funcBody,
-	                    std::vector<CodeLine> *moreLines,
-	                    const clang::SourceManager& sm);
+	                    std::vector<CodeLine> *moreLines);
 	std::string genAppendix(const char *source,
 	                        const char *line,
 	                        std::string *fName,
@@ -84,10 +83,8 @@ private:
 	std::string genSource(std::string appendix) const;
 	int Console::splitInput(const std::string& source,
 	                        const std::string& input,
-	                        clang::SourceManager *sm,
 	                        std::vector<std::string> *statements);
-	clang::Stmt * lineToStmt(std::string line,
-	                         clang::SourceManager *sm,
+	clang::Stmt * lineToStmt(const std::string& line,
 	                         std::string *src);
 
 	bool compileLinkAndRun(const std::string& src,
@@ -99,9 +96,9 @@ private:
 	std::ostream& _err;
 	mutable llvm::raw_os_ostream _raw_err;
 	clang::LangOptions _options;
+	llvm::OwningPtr<Parser> _parser;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
-	llvm::OwningPtr<Parser> _parser;
 	llvm::OwningPtr<DiagnosticsProvider> _dp;
 	std::vector<CodeLine> _lines;
 	std::string _buffer;

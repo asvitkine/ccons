@@ -26,15 +26,75 @@ using std::string;
 
 namespace ccons {
 
+
+//
+// ParseOperation
+//
+
+ParseOperation::ParseOperation(const clang::LangOptions& options,
+                               clang::TargetInfo& target,
+                               clang::Diagnostic *diag,
+                               clang::SourceManager *sm) :
+	_sm(sm),
+	_fm(new clang::FileManager),
+	_hs(new clang::HeaderSearch(*_fm))
+{
+	if (!sm)
+		_sm.reset(new clang::SourceManager);
+	clang::InitHeaderSearch ihs(*_hs);
+	ihs.AddDefaultEnvVarPaths(options);
+	ihs.AddDefaultSystemIncludePaths(options);
+	ihs.Realize();
+	_pp.reset(new clang::Preprocessor(*diag, options, target, *_sm, *_hs));
+	InitializePreprocessor(*_pp);
+	_ast.reset(new clang::ASTContext(options, *_sm, target,
+		_pp->getIdentifierTable(), _pp->getSelectorTable()));
+}
+
+clang::ASTContext * ParseOperation::getASTContext() const
+{
+	return _ast.get();
+}
+
+clang::Preprocessor * ParseOperation::getPreprocessor() const
+{
+	return _pp.get();
+}
+
+clang::SourceManager * ParseOperation::getSourceManager() const
+{
+	return _sm.get();
+}
+
+
+//
+// Parser
+//
+
 Parser::Parser(const clang::LangOptions& options) :
 	_options(options),
 	_target(clang::TargetInfo::CreateTargetInfo(LLVM_HOSTTRIPLE))
 {
 }
 
-clang::ASTContext * Parser::getContext() const
+Parser::~Parser()
 {
-	return _ast.get();
+	releaseAccumulatedParseOperations();
+}
+
+void Parser::releaseAccumulatedParseOperations()
+{
+	for (std::vector<ParseOperation*>::iterator I = _ops.begin(), E = _ops.end();
+	     I != E; ++I) {
+		delete *I;
+	}
+	_ops.clear();
+}
+
+
+ParseOperation * Parser::getLastParseOperation() const
+{
+	return _ops.back();
 }
 
 Parser::InputType Parser::analyzeInput(const string& contextSource,
@@ -46,23 +106,17 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		indentLevel = 1;
 		return Incomplete;
 	}
-	clang::SourceManager sm;
-	createMemoryBuffer(buffer, "", &sm);
-	clang::FileManager fm;
-	clang::HeaderSearch headers(fm);
-	clang::InitHeaderSearch ihs(headers);
-	ihs.AddDefaultEnvVarPaths(_options);
-	ihs.AddDefaultSystemIncludePaths(_options);
-	ihs.Realize();
+	
 	ProxyDiagnosticClient pdc(NULL);
 	clang::Diagnostic diag(&pdc);
-	clang::Preprocessor PP(diag, _options, *_target, sm, headers);
-
-	InitializePreprocessor(PP);
+	llvm::OwningPtr<ParseOperation>
+		parseOp(new ParseOperation(_options, *_target, &diag));
+	createMemoryBuffer(buffer, "", parseOp->getSourceManager());
 
 	clang::Token LastTok;
 	bool TokWasDo = false;
-	unsigned stackSize = analyzeTokens(PP, LastTok, indentLevel, TokWasDo);
+	unsigned stackSize =
+		analyzeTokens(*parseOp->getPreprocessor(), LastTok, indentLevel, TokWasDo);
 
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
@@ -71,7 +125,6 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		clang::Diagnostic diag(&pdc);
 		diag.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
-		clang::SourceManager sm;
 		struct : public clang::ASTConsumer {
 			unsigned pos;
 			unsigned maxPos;
@@ -91,9 +144,9 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		} consumer;
 		consumer.pos = contextSource.length();
 		consumer.maxPos = consumer.pos + buffer.length();
-		consumer.sm = &sm;
+		consumer.sm  = new clang::SourceManager;
 		consumer.FD = NULL;
-		parse(src, &sm, &diag, &consumer);
+		parse(src, &diag, &consumer, consumer.sm);
 		if (!pdc.hadErrors() && consumer.FD) {
 			FD = consumer.FD;
 			return TopLevel;
@@ -170,24 +223,14 @@ unsigned Parser::analyzeTokens(clang::Preprocessor& PP,
 }
 
 void Parser::parse(const string& src,
-                   clang::SourceManager *sm,
                    clang::Diagnostic *diag,
-                   clang::ASTConsumer *consumer)
+                   clang::ASTConsumer *consumer,
+                   clang::SourceManager *sm)
 {
-	createMemoryBuffer(src, "Main", sm);
-	clang::HeaderSearch headers(_fm);
-	clang::InitHeaderSearch ihs(headers);
-	ihs.AddDefaultEnvVarPaths(_options);
-	ihs.AddDefaultSystemIncludePaths(_options);
-	ihs.Realize();
-
-	_pp.reset(new clang::Preprocessor(*diag, _options, *_target, *sm, headers));
-
-	InitializePreprocessor(*_pp);
-
-	_ast.reset(new clang::ASTContext(_options, *sm, *_target,
-		_pp->getIdentifierTable(), _pp->getSelectorTable()));
-	clang::ParseAST(*_pp, consumer, *_ast);
+	_ops.push_back(new ParseOperation(_options, *_target, diag, sm));
+	createMemoryBuffer(src, "", _ops.back()->getSourceManager());
+	clang::ParseAST(*_ops.back()->getPreprocessor(), consumer,
+	                *_ops.back()->getASTContext());
 }
 
 llvm::MemoryBuffer * Parser::createMemoryBuffer(const string& src,

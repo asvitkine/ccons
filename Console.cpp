@@ -41,6 +41,7 @@ Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_prompt(">>> ")
 {
 	_options.C99 = true;
+	_parser.reset(new Parser(_options));
 	// Declare exit() so users may call it without needing to #include <stdio.h>
 	_lines.push_back(CodeLine("void exit(int status);", DeclLine));
 }
@@ -79,7 +80,6 @@ string Console::genSource(string appendix) const
 
 int Console::splitInput(const string& source,
                         const string& input,
-                        clang::SourceManager *sm,
                         std::vector<string> *statements)
 {
 	string src = source;
@@ -91,12 +91,12 @@ int Console::splitInput(const string& source,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	std::vector<clang::Stmt*> stmts;
+	clang::SourceManager *sm = new clang::SourceManager;
 	StmtSplitter splitter(src, *sm, _options, &stmts);
 	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
-	_parser.reset(new Parser(_options));
 	if (_debugMode)
 		oprintf(_err, "Parsing in splitInput()...\n");
-	_parser->parse(src, sm, _dp->getDiagnostic(), &consumer);
+	_parser->parse(src, _dp->getDiagnostic(), &consumer, sm);
 
 	if (stmts.size() == 1) {
 		statements->push_back(input);
@@ -110,11 +110,10 @@ int Console::splitInput(const string& source,
 		}
 	}
 
-	return stmts.size();;
+	return stmts.size();
 }
 
-clang::Stmt * Console::lineToStmt(std::string line,
-                                  clang::SourceManager *sm,
+clang::Stmt * Console::lineToStmt(const std::string& line,
                                   std::string *src)
 {
 	*src += "void __ccons_internal() {\n";
@@ -124,12 +123,12 @@ clang::Stmt * Console::lineToStmt(std::string line,
 
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
+	clang::SourceManager *sm = new clang::SourceManager;
 	StmtFinder finder(pos, *sm);
 	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
-	_parser.reset(new Parser(_options));
 	if (_debugMode)
 		oprintf(_err, "Parsing in lineToStmt()...\n");
-	_parser->parse(*src, sm, _dp->getDiagnostic(), &consumer);
+	_parser->parse(*src, _dp->getDiagnostic(), &consumer, sm);
 
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		src->clear();
@@ -189,8 +188,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
                              const string& src,
                              string *appendix,
                              string *funcBody,
-                             std::vector<CodeLine> *moreLines,
-                             const clang::SourceManager& sm)
+                             std::vector<CodeLine> *moreLines)
 {
 	bool initializers = false;
 	for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
@@ -204,13 +202,15 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 	if (initializers) {
 		std::vector<string> decls;
 		std::vector<string> stmts;
+		clang::SourceManager *sm = _parser->getLastParseOperation()->getSourceManager();
+		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
 		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 				 E = DS->decl_end(); D != E; ++D) {
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
 				string decl = genVarDecl(VD->getType(), VD->getNameAsCString());
 				if (const clang::Expr *I = VD->getInit()) {
-					SrcRange range = getStmtRange(I, sm, _options);
-					if (I->isConstantInitializer(*_parser->getContext())) {
+					SrcRange range = getStmtRange(I, *sm, _options);
+					if (I->isConstantInitializer(*context)) {
 						// Keep the whole thing in the global context.
 						std::stringstream global;
 						global << decl << " = ";
@@ -225,7 +225,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						for (unsigned i = 0; i < numInits; i++) {
 							std::stringstream stmt;
 							stmt << VD->getNameAsCString() << "[" << i << "] = ";
-							range = getStmtRange(ILE->getInit(i), sm, _options);
+							range = getStmtRange(ILE->getInit(i), *sm, _options);
 							stmt << src.substr(range.first, range.second - range.first) << ";";
 							stmts.push_back(stmt.str());
 						}
@@ -263,7 +263,6 @@ string Console::genAppendix(const char *source,
 	string appendix;
 	string funcBody;
 	string src = source;
-	clang::SourceManager sm;
 
 	while (isspace(*line)) line++;
 
@@ -271,7 +270,7 @@ string Console::genAppendix(const char *source,
 	if (*line == '#') {
 		moreLines->push_back(CodeLine(line, PrprLine));
 		appendix += line;
-	} else if (const clang::Stmt *S = lineToStmt(line, &sm, &src)) {
+	} else if (const clang::Stmt *S = lineToStmt(line, &src)) {
 		if (_debugMode)
 			oprintf(_err, "Found Stmt for input.\n");
 		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
@@ -280,7 +279,7 @@ string Console::genAppendix(const char *source,
 			moreLines->push_back(CodeLine(line, StmtLine));
 			wasExpr = true;
 		} else if (const clang::DeclStmt *DS = dyn_cast<clang::DeclStmt>(S)) {
-			if (!handleDeclStmt(DS, src, &appendix, &funcBody, moreLines, sm)) {
+			if (!handleDeclStmt(DS, src, &appendix, &funcBody, moreLines)) {
 				moreLines->push_back(CodeLine(line, DeclLine));
 				appendix += line;
 				appendix += "\n";
@@ -300,7 +299,8 @@ string Console::genAppendix(const char *source,
 			funcNo += (_lines[i].second == StmtLine);
 		*fName = "__ccons_anon" + to_string(funcNo);
 		int bodyOffset;
-		appendix += genFunc(wasExpr ? &QT : NULL, _parser->getContext(), *fName, funcBody, bodyOffset);
+		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
+		appendix += genFunc(wasExpr ? &QT : NULL, context, *fName, funcBody, bodyOffset);
 		_dp->setOffset(bodyOffset + strlen(source));
 		if (_debugMode)
 			oprintf(_err, "Generating function %s()...\n", fName->c_str());
@@ -360,9 +360,8 @@ void Console::process(const char *line)
 		if (_buffer[0] == '#') {
 			split.push_back(_buffer);
 		} else {
-			clang::SourceManager sm;
 			string input = _buffer;
-			splitInput(src, input, &sm, &split);
+			splitInput(src, input, &split);
 		}
 		_buffer.clear();
 
@@ -380,7 +379,7 @@ void Console::process(const char *line)
 				}
 		}
 	}
-	_parser.reset();
+	_parser->releaseAccumulatedParseOperations();
 }
 
 bool Console::compileLinkAndRun(const string& src,
@@ -393,11 +392,10 @@ bool Console::compileLinkAndRun(const string& src,
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CompileOptions compileOptions;
 	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
-	clang::SourceManager sm;
 	Parser p2(_options); // we keep the other parser around because of QT...
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
-	p2.parse(src, &sm, _dp->getDiagnostic(), codegen.get());
+	p2.parse(src, _dp->getDiagnostic(), codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		_err << "\nNote: Last line ignored due to errors.\n";
 		return false;
