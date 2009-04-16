@@ -347,7 +347,7 @@ void Console::process(const char *line)
 		if (_debugMode)
 			oprintf(_err, "Treating input as function-level.\n");
 		std::vector<string> split;
-		if (line[0] == '#') {
+		if (_buffer[0] == '#') {
 			split.push_back(_buffer);
 		} else {
 			clang::SourceManager sm;

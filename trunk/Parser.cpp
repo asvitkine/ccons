@@ -42,6 +42,10 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
                                        int& indentLevel,
                                        const clang::FunctionDecl*& FD)
 {
+	if (buffer.length() > 1 && buffer[buffer.length() - 2] == '\\') {
+		indentLevel = 1;
+		return Incomplete;
+	}
 	clang::SourceManager sm;
 	createMemoryBuffer(buffer, "", &sm);
 	clang::FileManager fm;
