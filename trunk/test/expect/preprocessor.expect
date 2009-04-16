@@ -17,5 +17,11 @@ send "#undef XYZ\n"
 send "#define XYZ 100\n"
 check "XYZ;" "=> (int) 100"
 
+send "#define X \\\n"
+send   "\\\n"
+send "25\n"
+
+check "X;" "=> (int) 25"
+
 check "#include <xyz.abc>" "Note: Last line ignored due to errors."
 
