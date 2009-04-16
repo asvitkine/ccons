@@ -2,12 +2,14 @@
 #define CCONS_PARSER_H
 
 #include <string>
+#include <vector>
 
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/Support/MemoryBuffer.h>
 
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/FileManager.h>
+#include <clang/Lex/HeaderSearch.h>
 
 namespace clang {
 	class ASTConsumer;
@@ -23,11 +25,35 @@ namespace clang {
 
 namespace ccons {
 
+class ParseOperation {
+
+public:
+	
+	ParseOperation(const clang::LangOptions& options,
+	               clang::TargetInfo& target,
+	               clang::Diagnostic *diag,
+	               clang::SourceManager *sm = 0);
+
+  clang::ASTContext * getASTContext() const;
+	clang::Preprocessor * getPreprocessor() const;
+	clang::SourceManager * getSourceManager() const;
+
+private:
+
+	llvm::OwningPtr<clang::SourceManager> _sm;
+	llvm::OwningPtr<clang::FileManager> _fm;
+	llvm::OwningPtr<clang::HeaderSearch> _hs;
+	llvm::OwningPtr<clang::Preprocessor> _pp;
+	llvm::OwningPtr<clang::ASTContext> _ast;
+
+};
+
 class Parser {
 
 public:
 
 	explicit Parser(const clang::LangOptions& options);
+	~Parser();
 
 	enum InputType { Incomplete, TopLevel, Stmt }; 
 
@@ -36,19 +62,18 @@ public:
 	                       int& indentLevel,
 	                       const clang::FunctionDecl*& FD);
 	void parse(const std::string& source,
-	           clang::SourceManager *sm,
 	           clang::Diagnostic *diag,
-	           clang::ASTConsumer *consumer);
+	           clang::ASTConsumer *consumer,
+	           clang::SourceManager *sm = 0);
 
-  clang::ASTContext * getContext() const;
+  ParseOperation * getLastParseOperation() const;
+	void releaseAccumulatedParseOperations();
 
 private:
 
 	const clang::LangOptions& _options;
-	clang::FileManager _fm;
 	llvm::OwningPtr<clang::TargetInfo> _target;
-	llvm::OwningPtr<clang::Preprocessor> _pp;
-	llvm::OwningPtr<clang::ASTContext> _ast;
+	std::vector<ParseOperation*> _ops;
 
 	unsigned analyzeTokens(clang::Preprocessor& PP,
 	                       clang::Token& LastTok,
