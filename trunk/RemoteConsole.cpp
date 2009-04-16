@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <signal.h>
 
 #include <llvm/ADT/StringExtras.h>
 
