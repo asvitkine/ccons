@@ -81,9 +81,9 @@ private:
 	                        std::vector<CodeLine> *moreLines,
 	                        bool *hadErrors);
 	std::string genSource(std::string appendix) const;
-	int Console::splitInput(const std::string& source,
-	                        const std::string& input,
-	                        std::vector<std::string> *statements);
+	int splitInput(const std::string& source,
+	               const std::string& input,
+	               std::vector<std::string> *statements);
 	clang::Stmt * lineToStmt(const std::string& line,
 	                         std::string *src);
 
