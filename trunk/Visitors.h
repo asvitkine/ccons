@@ -63,26 +63,25 @@ class FunctionBodyConsumer : public clang::ASTConsumer {
 private:
 
 	T *_SF;
-	bool _seenFunction;
+	std::string _funcName;
 
 public:
 
-	explicit FunctionBodyConsumer<T>(T *SF)
-		: _SF(SF), _seenFunction(false) {}
+	explicit FunctionBodyConsumer<T>(T *SF, const char *funcName)
+		: _SF(SF), _funcName(funcName) {}
 	~FunctionBodyConsumer<T>() {}
 
 	void HandleTopLevelDecl(clang::DeclGroupRef D) {
 		for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
 			if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
-				if (clang::Stmt *S = FD->getBody()) {
-					_SF->VisitChildren(S);
-					_seenFunction = true;
+				if (FD->getNameAsCString() == _funcName) {
+					if (clang::Stmt *S = FD->getBody()) {
+						_SF->VisitChildren(S);
+					}
 				}
 			}
 		}
 	}
-
-	bool seenFunction() const { return _seenFunction; }
 
 };
 
