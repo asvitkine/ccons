@@ -21,4 +21,9 @@ send "}\n"
 
 check "fib(7);" "=> (int) 13"
 
+send "int Lucas(int n)\n"
+send "{\n"
+send   "return fib(n-1)+fib(n+1);\n"
+send "}\n"
 
+check "Lucas(6);" "=> (int) 18"
