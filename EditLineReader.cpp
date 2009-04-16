@@ -36,8 +36,7 @@ const char * EditLineReader::readLine(const char *prompt, const char *input)
 {
 	_prompt = prompt;
 
-	// FIXME: el_push() is broken... the second parameter should be const char *
-	el_push(_editLine, const_cast<char*>(input));
+	el_push(_editLine, input);
 
 	const char *line = el_gets(_editLine, NULL);
 
