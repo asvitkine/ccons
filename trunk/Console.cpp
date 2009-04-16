@@ -258,14 +258,7 @@ string Console::genAppendix(const char *source,
 	clang::SourceManager sm;
 
 	while (isspace(*line)) line++;
-/*
-{
-clang::SourceManager mysm;
-std::vector<string> split;
-string input = line;
-splitInput(src, input, &mysm, &split);
-}
-*/
+
 	*hadErrors = false;
 	if (*line == '#') {
 		moreLines->push_back(CodeLine(line, PrprLine));
@@ -310,7 +303,6 @@ splitInput(src, input, &mysm, &split);
 
 void Console::process(const char *line)
 {
-	string fName;
 	clang::QualType retType(0, 0);
 	std::vector<CodeLine> linesToAppend;
 	bool hadErrors = false;
@@ -322,7 +314,6 @@ void Console::process(const char *line)
 	int indentLevel;
 	const clang::FunctionDecl *FD;
 	bool shouldBeTopLevel = false;
-	// TODO: split input! (if multiple statements on a single line)
 	switch (p.analyzeInput(src, _buffer, indentLevel, FD)) {
 		case Parser::Incomplete:
 			_input = string(indentLevel * 2, ' ');
@@ -343,23 +334,39 @@ void Console::process(const char *line)
 			oprintf(_err, "Treating input as top-level.\n");
 		appendix = _buffer;
 		linesToAppend.push_back(CodeLine(getFunctionDeclAsString(FD), DeclLine));
+		_buffer.clear();
+
+		if (hadErrors)
+			return;
+
+		src = genSource(appendix);
+		string empty;
+		if (compileLinkAndRun(src, empty, retType)) {
+			for (unsigned i = 0; i < linesToAppend.size(); ++i)
+				_lines.push_back(linesToAppend[i]);
+		}
 	} else {
 		if (_debugMode)
 			oprintf(_err, "Treating input as function-level.\n");
-		appendix = genAppendix(src.c_str(), _buffer.c_str(), &fName, retType, &linesToAppend, &hadErrors);
+		clang::SourceManager sm;
+		std::vector<string> split;
+		string input = line;
+		splitInput(src, input, &sm, &split);
+		_buffer.clear();
+
+		for (unsigned i = 0; i < split.size(); i++) {
+			string fName;
+			appendix = genAppendix(src.c_str(), split[i].c_str(), &fName, retType, &linesToAppend, &hadErrors);
+			if (hadErrors)
+				return;
+			src = genSource(appendix);
+
+			if (compileLinkAndRun(src, fName, retType)) {
+				for (unsigned i = 0; i < linesToAppend.size(); ++i)
+					_lines.push_back(linesToAppend[i]);
+				}
+		}
 	}
-	_buffer.clear();
-
-	if (hadErrors)
-		return;
-
-	src = genSource(appendix);
-
-	if (compileLinkAndRun(src, fName, retType)) {
-		for (unsigned i = 0; i < linesToAppend.size(); ++i)
-			_lines.push_back(linesToAppend[i]);
-	}
-
 	_parser.reset();
 }
 
