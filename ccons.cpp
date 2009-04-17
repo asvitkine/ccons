@@ -60,18 +60,6 @@ int main(const int argc, char **argv)
 	                                  false/*, "ccons-"*/);
 	// TODO SetVersionPrinter()
 
-/*
-	TODO:
-	Loading of external lib:
-	#include <llvm/System/DynamicLibrary.h>
-	char *libz = "/usr/lib/libz.dylib";
-	llvm::sys::Path path(libz);
-	if (path.isDynamicLibrary()) {
-		std::string errMsg;
-		llvm::sys::DynamicLibrary::LoadLibraryPermanently(libz, &errMsg);
-	}
-*/
-
 	if (DebugMode && !SerializedOutput) {
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
 		llvm::sys::PrintStackTraceOnErrorSignal();
