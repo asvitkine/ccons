@@ -405,9 +405,10 @@ bool Console::compileLinkAndRun(const string& src,
 	if (module) {
 		if (!_linker)
 			_linker.reset(new llvm::Linker("ccons", "ccons"));
-		string err;
-		_linker->LinkInModule(module, &err);
-		_out << err;
+		string error;
+		_linker->LinkInModule(module, &error);
+		if (!error.empty())
+			oprintf(_err, "%s\n", error.c_str());
 		// link it with the existing ones
 		if (!fName.empty()) {
 			module = _linker->getModule();
