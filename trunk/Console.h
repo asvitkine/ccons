@@ -66,6 +66,7 @@ private:
 
 	typedef std::pair<std::string, LineType> CodeLine;
 
+	void reportInputError();
 	void printGV(const llvm::Function *F,
 	             const llvm::GenericValue& GV,
 	             const clang::QualType& QT) const;

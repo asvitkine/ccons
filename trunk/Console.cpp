@@ -63,6 +63,11 @@ const char * Console::input() const
 	return _input.c_str();
 }
 
+void Console::reportInputError()
+{
+	_err << "\nNote: Last line ignored due to errors.\n";
+}
+
 string Console::genSource(string appendix) const
 {
 	string src;
@@ -99,7 +104,11 @@ int Console::splitInput(const string& source,
 		oprintf(_err, "Parsing in splitInput()...\n");
 	_parser->parse(src, _dp->getDiagnostic(), &consumer, sm);
 
-	if (stmts.size() == 1 || _dp->getDiagnostic()->hasErrorOccurred()) {
+	statements->clear();
+	if (_dp->getDiagnostic()->hasErrorOccurred()) {
+		reportInputError();
+		return 0;
+	} else if (stmts.size() == 1) {
 		statements->push_back(input);
 	} else {
 		for (unsigned i = 0; i < stmts.size(); i++) {
@@ -293,7 +302,7 @@ string Console::genAppendix(const char *source,
 			moreLines->push_back(CodeLine(line, StmtLine));
 		}
 	} else if (src.empty()) {
-		_err << "\nNote: Last line ignored due to errors.\n";
+		reportInputError();
 		*hadErrors = true;
 	}
 
@@ -382,9 +391,10 @@ void Console::process(const char *line)
 			src = genSource(appendix);
 
 			if (compileLinkAndRun(src, fName, retType)) {
-				for (unsigned i = 0; i < linesToAppend.size(); ++i)
+				for (unsigned i = 0; i < linesToAppend.size(); ++i) {
 					_lines.push_back(linesToAppend[i]);
 				}
+			}
 		}
 	}
 	_parser->releaseAccumulatedParseOperations();
@@ -405,7 +415,7 @@ bool Console::compileLinkAndRun(const string& src,
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
 	p2.parse(src, _dp->getDiagnostic(), codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
-		_err << "\nNote: Last line ignored due to errors.\n";
+		reportInputError();
 		return false;
 	}
 
