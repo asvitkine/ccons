@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+log_user 0
+set timeout 2
+
+proc check {input output} {
+    send "$input\n"
+    expect timeout {
+	send_user "Failed: input \"$input\" did not result in \"$output\" \n"
+	exit
+    } "$output"
+}
+
+spawn ../../ccons
+
+send "struct point { \n"
+send "  int x ; \n"
+send "  int y ; \n"
+send "} ; \n"
+
+send "struct point add_points(struct point a, struct point b)"
+send "{\n"
+send "  struct point c = { a.x + b.x, a.y + b.y };\n"
+send "  return c;\n"
+send "}\n"
+
+send "struct point P = {10,15}, Q = {7,3}, R;\n"
+
+check "R = add_points(P, Q);" "=> (struct point)"
+check "R.x;" "=> (int) 17"
+check "R.y;" "=> (int) 18"
