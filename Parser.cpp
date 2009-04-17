@@ -12,6 +12,7 @@
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/ParseAST.h>
+#include <clang/Sema/SemaDiagnostic.h>
 
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/Diagnostic.h>
@@ -121,8 +122,11 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (stackSize > 0) return Incomplete;
-		ProxyDiagnosticClient pdc(NULL); // ignore diagnostics
+		ProxyDiagnosticClient pdc(NULL); // do not output diagnostics
 		clang::Diagnostic diag(&pdc);
+		// Setting this ensures "foo();" is not a valid top-level declaration.
+		diag.setDiagnosticMapping(clang::diag::warn_missing_type_specifier,
+	                            clang::diag::MAP_ERROR);
 		diag.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
 		struct : public clang::ASTConsumer {
@@ -144,7 +148,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		} consumer;
 		consumer.pos = contextSource.length();
 		consumer.maxPos = consumer.pos + buffer.length();
-		consumer.sm  = new clang::SourceManager;
+		consumer.sm = new clang::SourceManager;
 		consumer.FD = NULL;
 		parse(src, &diag, &consumer, consumer.sm);
 		if (!pdc.hadErrors() && consumer.FD) {
