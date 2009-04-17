@@ -24,6 +24,7 @@
 
 #include "ClangUtils.h"
 #include "Diagnostics.h"
+#include "InternalCommands.h"
 #include "Parser.h"
 #include "SrcGen.h"
 #include "StringUtils.h"
@@ -317,6 +318,10 @@ void Console::process(const char *line)
 	std::vector<CodeLine> linesToAppend;
 	bool hadErrors = false;
 	string appendix;
+
+	if (_buffer.empty() && HandleInternalCommand(line, _debugMode, _out, _err))
+		return;
+
 	string src = genSource("");	
 
 	_buffer += line;
