@@ -411,7 +411,7 @@ bool Console::compileLinkAndRun(const string& src,
 		string error;
 		_linker->LinkInModule(module, &error);
 		if (!error.empty())
-			oprintf(_err, "%s\n", error.c_str());
+			oprintf(_err, "Error: %s\n", error.c_str());
 		// link it with the existing ones
 		if (!fName.empty()) {
 			module = _linker->getModule();
