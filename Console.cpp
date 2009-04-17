@@ -237,6 +237,9 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						stmts.push_back(stmt.str());
 						*appendix += decl + ";\n";
 					}
+				} else {
+					// Just add it as a definition without an initializer.
+					*appendix += decl + ";\n";
 				}
 				decls.push_back(decl + ";");
 			}
