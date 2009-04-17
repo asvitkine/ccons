@@ -8,7 +8,7 @@ namespace ccons {
 
 DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out,
                                          const clang::LangOptions& opts)
-	: _tdp(out, false, true, false)
+	: _tdp(out, false, true, false, true, false)
 	, _diag(this)
 {
 	_tdp.SetLangOpts(opts);
