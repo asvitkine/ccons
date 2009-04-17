@@ -99,7 +99,7 @@ int Console::splitInput(const string& source,
 		oprintf(_err, "Parsing in splitInput()...\n");
 	_parser->parse(src, _dp->getDiagnostic(), &consumer, sm);
 
-	if (stmts.size() == 1) {
+	if (stmts.size() == 1 || _dp->getDiagnostic()->hasErrorOccurred()) {
 		statements->push_back(input);
 	} else {
 		for (unsigned i = 0; i < stmts.size(); i++) {
