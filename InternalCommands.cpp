@@ -30,7 +30,7 @@ bool HandleInternalCommand(const char *input, bool debugMode,
 {
 	while (isspace(*input)) input++;
 
-	if (*input == '/') {
+	if (*input == ':') {
 		int i;
 		char arg[4096], *argp = arg;
 		input++;
@@ -44,12 +44,12 @@ bool HandleInternalCommand(const char *input, bool debugMode,
 
 		if (!strncmp(input, "help", 4)) {
 			oprintf(out, "The following commands are available:\n");
-			oprintf(out, "  /help - displays this message\n");
-			oprintf(out, "  /load <library path> - dynamically loads specified library\n");
+			oprintf(out, "  :help - displays this message\n");
+			oprintf(out, "  :load <library path> - dynamically loads specified library\n");
 		} else if (!strncmp(input, "load", 4)) {
 			HandleLoadCommand(argp, debugMode, out, err);
 		} else {
-			oprintf(out, "Invalid command specified. Type /help for a list of commands.\n");
+			oprintf(out, "Invalid command specified. Type :help for a list of commands.\n");
 		}
 		return true;
 	}
