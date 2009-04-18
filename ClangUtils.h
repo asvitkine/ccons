@@ -1,6 +1,16 @@
 #ifndef CCONS_CLANG_UTILS_H
 #define CCONS_CLANG_UTILS_H
 
+//
+// Header for ClangUtils.cpp which contains utility functionality that
+// deals with the clang libraries and data structures.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include <llvm/ADT/OwningPtr.h>
 
 #include <clang/AST/AST.h>

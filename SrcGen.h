@@ -1,6 +1,16 @@
 #ifndef CCONS_SRC_GEN_H
 #define CCONS_SRC_GEN_H
 
+//
+// SrcGen provides various utility functions for re-writing and generating
+// string with C code for various use cases.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include <string>
 
 namespace clang {
