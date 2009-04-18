@@ -11,7 +11,7 @@ DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out,
 	: _tdp(out, false, true, false, true, false)
 	, _diag(this)
 {
-	_tdp.SetLangOpts(opts);
+	_tdp.setLangOptions(&opts);
 	_diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
 	                           clang::diag::MAP_ERROR);
 	_diag.setDiagnosticMapping(clang::diag::warn_unused_expr,

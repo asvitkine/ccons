@@ -97,12 +97,14 @@ int Console::splitInput(const string& source,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	std::vector<clang::Stmt*> stmts;
-	clang::SourceManager *sm = new clang::SourceManager;
+	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
+	clang::SourceManager *sm = parseOp->getSourceManager();
 	StmtSplitter splitter(src, *sm, _options, &stmts);
-	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
+	clang::ASTContext *ast = parseOp->getASTContext();
+	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, ast, "__ccons_internal");
 	if (_debugMode)
 		oprintf(_err, "Parsing in splitInput()...\n");
-	_parser->parse(src, _dp->getDiagnostic(), &consumer, sm);
+	_parser->parse(src, parseOp, &consumer);
 
 	statements->clear();
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
@@ -133,12 +135,13 @@ clang::Stmt * Console::lineToStmt(const std::string& line,
 
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
-	clang::SourceManager *sm = new clang::SourceManager;
-	StmtFinder finder(pos, *sm);
-	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
+	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
+	StmtFinder finder(pos, *parseOp->getSourceManager());
+	clang::ASTContext *ast = parseOp->getASTContext();
+	FunctionBodyConsumer<StmtFinder> consumer(&finder, ast, "__ccons_internal");
 	if (_debugMode)
 		oprintf(_err, "Parsing in lineToStmt()...\n");
-	_parser->parse(*src, _dp->getDiagnostic(), &consumer, sm);
+	_parser->parse(*src, parseOp, &consumer);
 
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		src->clear();
@@ -336,9 +339,9 @@ void Console::process(const char *line)
 	_buffer += line;
 	Parser p(_options);
 	int indentLevel;
-	const clang::FunctionDecl *FD;
+	std::vector<clang::FunctionDecl *> fnDecls;
 	bool shouldBeTopLevel = false;
-	switch (p.analyzeInput(src, _buffer, indentLevel, FD)) {
+	switch (p.analyzeInput(src, _buffer, indentLevel, &fnDecls)) {
 		case Parser::Incomplete:
 			_input = string(indentLevel * 2, ' ');
 			_prompt = "... ";
@@ -357,7 +360,8 @@ void Console::process(const char *line)
 		if (_debugMode)
 			oprintf(_err, "Treating input as top-level.\n");
 		appendix = _buffer;
-		linesToAppend.push_back(CodeLine(getFunctionDeclAsString(FD), DeclLine));
+		for (unsigned i = 0; i < fnDecls.size(); ++i)
+			linesToAppend.push_back(CodeLine(getFunctionDeclAsString(fnDecls[i]), DeclLine));
 		_buffer.clear();
 
 		if (hadErrors)
@@ -410,10 +414,9 @@ bool Console::compileLinkAndRun(const string& src,
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CompileOptions compileOptions;
 	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
-	Parser p2(_options); // we keep the other parser around because of QT...
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
-	p2.parse(src, _dp->getDiagnostic(), codegen.get());
+	_parser->parse(src, _dp->getDiagnostic(), codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		reportInputError();
 		return false;
