@@ -1,6 +1,17 @@
 #ifndef CCONS_CONSOLE_H
 #define CCONS_CONSOLE_H
 
+//
+// Defined the IConsole interface used by ccons.cpp to process user input,
+// as well as the concrete Console class, implementing said interface and
+// providing C input processing using the clang and llvm libraries.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include <iostream>
 #include <string>
 #include <vector>

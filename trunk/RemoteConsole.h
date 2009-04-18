@@ -1,6 +1,19 @@
 #ifndef CCONS_REMOTE_CONSOLE_H
 #define CCONS_REMOTE_CONSOLE_H
 
+//
+// RemoteConsole is an implementation of IConsole which spawns and communicates
+// with a second ccons process for handling the user input.
+//
+// SerializedOutputConsole is used by the ccons process spawned by RemoteConsole
+// to send its output in a serialized format.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include <stdio.h>
 #include <string>
 #include <sstream>
@@ -35,7 +48,7 @@ private:
 
 
 
-class SerializedOutputConsole: public IConsole {
+class SerializedOutputConsole : public IConsole {
 
 public:
 

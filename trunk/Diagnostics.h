@@ -1,6 +1,15 @@
 #ifndef CCONS_DIAGNOSTICS_H
 #define CCONS_DIAGNOSTICS_H
 
+//
+// Utilities related to diagnostics reporting for ccons.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include <set>
 
 #include <llvm/Support/raw_ostream.h>
