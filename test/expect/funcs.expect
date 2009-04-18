@@ -27,3 +27,8 @@ send   "return fib(n-1)+fib(n+1);\n"
 send "}\n"
 
 check "Lucas(6);" "=> (int) 18"
+
+send "int a() {return 1;} int b() {return 2;}"
+check "a();" "=> (int) 1"
+check "b();" "=> (int) 2"
+
