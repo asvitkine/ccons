@@ -34,14 +34,11 @@ namespace ccons {
 
 ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::TargetInfo& target,
-                               clang::Diagnostic *diag,
-                               clang::SourceManager *sm) :
-	_sm(sm),
+                               clang::Diagnostic *diag) :
+	_sm(new clang::SourceManager),
 	_fm(new clang::FileManager),
 	_hs(new clang::HeaderSearch(*_fm))
 {
-	if (!sm)
-		_sm.reset(new clang::SourceManager);
 	clang::InitHeaderSearch ihs(*_hs);
 	ihs.AddDefaultEnvVarPaths(options);
 	ihs.AddDefaultSystemIncludePaths(options);
@@ -101,7 +98,7 @@ ParseOperation * Parser::getLastParseOperation() const
 Parser::InputType Parser::analyzeInput(const string& contextSource,
                                        const string& buffer,
                                        int& indentLevel,
-                                       const clang::FunctionDecl*& FD)
+                                       std::vector<clang::FunctionDecl*> *fds)
 {
 	if (buffer.length() > 1 && buffer[buffer.length() - 2] == '\\') {
 		indentLevel = 1;
@@ -133,26 +130,26 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 			unsigned pos;
 			unsigned maxPos;
 			clang::SourceManager *sm;
-			clang::FunctionDecl *FD;
+			std::vector<clang::FunctionDecl*> fds;
 			void HandleTopLevelDecl(clang::DeclGroupRef D) {
 				for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
-					if (clang::FunctionDecl *FuD = dyn_cast<clang::FunctionDecl>(*I)) {
-						clang::SourceLocation Loc = FuD->getTypeSpecStartLoc();
+					if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
+						clang::SourceLocation Loc = FD->getTypeSpecStartLoc();
 						unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
-						if (offset == pos) {
-							this->FD = FuD;
+						if (offset >= pos) {
+							fds.push_back(FD);
 						}
 					}
 				}
 			}
 		} consumer;
+		ParseOperation *parseOp = createParseOperation(&diag);
 		consumer.pos = contextSource.length();
 		consumer.maxPos = consumer.pos + buffer.length();
-		consumer.sm = new clang::SourceManager;
-		consumer.FD = NULL;
-		parse(src, &diag, &consumer, consumer.sm);
-		if (!pdc.hadErrors() && consumer.FD) {
-			FD = consumer.FD;
+		consumer.sm = parseOp->getSourceManager();
+		parse(src, parseOp, &consumer);
+		if (!pdc.hadErrors() && !consumer.fds.empty()) {
+			fds->swap(consumer.fds);
 			return TopLevel;
 		}
 		return Stmt;
@@ -226,16 +223,29 @@ unsigned Parser::analyzeTokens(clang::Preprocessor& PP,
 	return S.size();
 }
 
+ParseOperation * Parser::createParseOperation(clang::Diagnostic *diag)
+{
+	return new ParseOperation(_options, *_target, diag);
+}
+
+void Parser::parse(const string& src,
+                   ParseOperation *parseOp,
+                   clang::ASTConsumer *consumer)
+{
+	_ops.push_back(parseOp);
+	createMemoryBuffer(src, "", parseOp->getSourceManager());
+	clang::ParseAST(*parseOp->getPreprocessor(), consumer,
+	                *parseOp->getASTContext());
+}
+
+
 void Parser::parse(const string& src,
                    clang::Diagnostic *diag,
-                   clang::ASTConsumer *consumer,
-                   clang::SourceManager *sm)
+                   clang::ASTConsumer *consumer)
 {
-	_ops.push_back(new ParseOperation(_options, *_target, diag, sm));
-	createMemoryBuffer(src, "", _ops.back()->getSourceManager());
-	clang::ParseAST(*_ops.back()->getPreprocessor(), consumer,
-	                *_ops.back()->getASTContext());
+	parse(src, createParseOperation(diag), consumer);
 }
+
 
 llvm::MemoryBuffer * Parser::createMemoryBuffer(const string& src,
                                                 const char *name,

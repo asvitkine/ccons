@@ -41,8 +41,7 @@ public:
 	
 	ParseOperation(const clang::LangOptions& options,
 	               clang::TargetInfo& target,
-	               clang::Diagnostic *diag,
-	               clang::SourceManager *sm = 0);
+	               clang::Diagnostic *diag);
 
   clang::ASTContext * getASTContext() const;
 	clang::Preprocessor * getPreprocessor() const;
@@ -70,11 +69,24 @@ public:
 	InputType analyzeInput(const std::string& contextSource,
 	                       const std::string& buffer,
 	                       int& indentLevel,
-	                       const clang::FunctionDecl*& FD);
-	void parse(const std::string& source,
+	                       std::vector<clang::FunctionDecl*> *fds);
+
+	// Create a new ParseOperation that the caller should take ownership of
+	// and the lifetime of which must be shorter than of the Parser.
+	ParseOperation * createParseOperation(clang::Diagnostic *diag);
+
+	// Parse the specified source code with the specified parse operation
+	// and consumer. Upon parsing, ownership of parseOp is transferred to
+	// the Parser permanently.
+	void parse(const std::string& src,
+	           ParseOperation *parseOp,
+						 clang::ASTConsumer *consumer);
+
+	// Parse by implicitely creating a ParseOperation. Equivalent to
+	// parse(src, createParseOperation(diag), consumer).
+	void parse(const std::string& src,
 	           clang::Diagnostic *diag,
-	           clang::ASTConsumer *consumer,
-	           clang::SourceManager *sm = 0);
+						 clang::ASTConsumer *consumer);
 
   ParseOperation * getLastParseOperation() const;
 	void releaseAccumulatedParseOperations();
