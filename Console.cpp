@@ -337,11 +337,10 @@ void Console::process(const char *line)
 	string src = genSource("");	
 
 	_buffer += line;
-	Parser p(_options);
 	int indentLevel;
 	std::vector<clang::FunctionDecl *> fnDecls;
 	bool shouldBeTopLevel = false;
-	switch (p.analyzeInput(src, _buffer, indentLevel, &fnDecls)) {
+	switch (_parser->analyzeInput(src, _buffer, indentLevel, &fnDecls)) {
 		case Parser::Incomplete:
 			_input = string(indentLevel * 2, ' ');
 			_prompt = "... ";
