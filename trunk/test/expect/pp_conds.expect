@@ -23,3 +23,21 @@ send "x *= 10;\n"
 send "#endif\n"
 check "x;" "=> (int) 230"
 
+send "x = 10;\n"
+send "#ifdef FOO\n"
+send "x = 25;\n"
+send "#endif\n"
+check "x;" "=> (int) 10"
+
+send "x = 15;\n"
+send "#define FOO\n"
+send "#ifndef FOO\n"
+send "x = 35;\n"
+send "#endif\n"
+check "x;" "=> (int) 15"
+
+send "#ifdef FOO\n"
+send "x = 51;\n"
+send "#endif\n"
+check "x;" "=> (int) 51"
+
