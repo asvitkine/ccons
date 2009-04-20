@@ -359,6 +359,8 @@ void Console::process(const char *line)
 		if (_debugMode)
 			oprintf(_err, "Treating input as top-level.\n");
 		appendix = _buffer;
+		oprintf(_err, "Recording %d function declaration%s...\n",
+		              fnDecls.size(), fnDecls.size() == 1 ? "" : "s");
 		for (unsigned i = 0; i < fnDecls.size(); ++i)
 			linesToAppend.push_back(CodeLine(getFunctionDeclAsString(fnDecls[i]), DeclLine));
 		_buffer.clear();
