@@ -97,10 +97,10 @@ private:
 	llvm::OwningPtr<clang::TargetInfo> _target;
 	std::vector<ParseOperation*> _ops;
 
-	unsigned analyzeTokens(clang::Preprocessor& PP,
-	                       clang::Token& LastTok,
-	                       int& indentLevel,
-	                       bool& TokWasDo);
+	int analyzeTokens(clang::Preprocessor& PP,
+	                  clang::Token& LastTok,
+	                  int& indentLevel,
+	                  bool& TokWasDo);
 
 	static llvm::MemoryBuffer * createMemoryBuffer(const std::string& src,
 	                                               const char *name,
