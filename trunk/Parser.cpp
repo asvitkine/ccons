@@ -239,6 +239,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 					switch (II->getPPKeywordID()) {
 						case clang::tok::pp_if:
 						case clang::tok::pp_ifdef:
+						case clang::tok::pp_ifndef:
 							result++;
 							break;
 						case clang::tok::pp_endif:
