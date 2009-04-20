@@ -96,7 +96,7 @@ private:
 	int splitInput(const std::string& source,
 	               const std::string& input,
 	               std::vector<std::string> *statements);
-	clang::Stmt * lineToStmt(const std::string& line,
+	clang::Stmt * locateStmt(const std::string& line,
 	                         std::string *src);
 
 	bool compileLinkAndRun(const std::string& src,
@@ -116,6 +116,7 @@ private:
 	std::string _buffer;
 	std::string _prompt;
 	std::string _input;
+	unsigned _funcNo;
 
 };
 

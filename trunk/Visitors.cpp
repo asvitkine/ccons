@@ -34,7 +34,8 @@ void StmtFinder::VisitChildren(clang::Stmt *S)
 void StmtFinder::VisitStmt(clang::Stmt *S)
 {
 	clang::SourceLocation Loc = S->getLocStart();
-	if (_sm.getFileOffset(_sm.getInstantiationLoc(Loc)) == _pos) {
+	unsigned offs = _sm.getFileOffset(_sm.getInstantiationLoc(Loc));
+	if (offs == _pos) {
 		_S = S;
 	}
 }
