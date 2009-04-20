@@ -135,9 +135,11 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 				for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
 					if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
 						clang::SourceLocation Loc = FD->getTypeSpecStartLoc();
-						unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
-						if (offset >= pos) {
-							fds.push_back(FD);
+						if (sm->getFileID(Loc) == sm->getMainFileID()) {
+							unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
+							if (offset >= pos) {
+								fds.push_back(FD);
+							}
 						}
 					}
 				}
