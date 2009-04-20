@@ -39,7 +39,8 @@ Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_out(out),
 	_err(err),
 	_raw_err(err),
-	_prompt(">>> ")
+	_prompt(">>> "),
+	_funcNo(0)
 {
 	_options.C99 = true;
 	_parser.reset(new Parser(_options));
@@ -125,7 +126,7 @@ int Console::splitInput(const string& source,
 	return stmts.size();
 }
 
-clang::Stmt * Console::lineToStmt(const std::string& line,
+clang::Stmt * Console::locateStmt(const std::string& line,
                                   std::string *src)
 {
 	*src += "void __ccons_internal() {\n";
@@ -136,11 +137,12 @@ clang::Stmt * Console::lineToStmt(const std::string& line,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
-	StmtFinder finder(pos, *parseOp->getSourceManager());
+	clang::SourceManager& sm = *parseOp->getSourceManager();
+	StmtFinder finder(pos, sm);
 	clang::ASTContext *ast = parseOp->getASTContext();
 	FunctionBodyConsumer<StmtFinder> consumer(&finder, ast, "__ccons_internal");
 	if (_debugMode)
-		oprintf(_err, "Parsing in lineToStmt()...\n");
+		oprintf(_err, "Parsing in locateStmt()...\n");
 	_parser->parse(*src, parseOp, &consumer);
 
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
@@ -283,10 +285,7 @@ string Console::genAppendix(const char *source,
 	while (isspace(*line)) line++;
 
 	*hadErrors = false;
-	if (*line == '#') {
-		moreLines->push_back(CodeLine(line, PrprLine));
-		appendix += line;
-	} else if (const clang::Stmt *S = lineToStmt(line, &src)) {
+	if (const clang::Stmt *S = locateStmt(line, &src)) {
 		if (_debugMode)
 			oprintf(_err, "Found Stmt for input.\n");
 		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
@@ -307,13 +306,12 @@ string Console::genAppendix(const char *source,
 	} else if (src.empty()) {
 		reportInputError();
 		*hadErrors = true;
+	} else {
+		funcBody = line;
 	}
 
 	if (!funcBody.empty()) {
-		int funcNo = 0;
-		for (unsigned i = 0; i < _lines.size(); ++i)
-			funcNo += (_lines[i].second == StmtLine);
-		*fName = "__ccons_anon" + to_string(funcNo);
+		*fName = "__ccons_anon" + to_string(_funcNo++);
 		int bodyOffset;
 		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
 		appendix += genFunc(wasExpr ? &QT : NULL, context, *fName, funcBody, bodyOffset);
