@@ -1,3 +1,12 @@
+//
+// Useful string utility commands used in ccons.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include "StringUtils.h"
 
 #include <stdlib.h>
