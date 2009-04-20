@@ -164,9 +164,10 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 
 int Parser::analyzeTokens(clang::Preprocessor& PP,
                           clang::Token& LastTok,
-													int& indentLevel,
+                          int& indentLevel,
                           bool& TokWasDo)
 {
+	int result;
 	std::stack<std::pair<clang::Token, clang::Token> > S; // Tok, PrevTok
 
 	indentLevel = 0;
@@ -208,6 +209,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 		LastTok = Tok;
 		PP.Lex(Tok);
 	}
+	result = S.size();
 
 	// TODO: We need to properly account for indent-level for blocks that do not
 	//       have braces... such as:
@@ -224,7 +226,36 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 	// Both of the above could be solved by some kind of rewriter-pass that would
 	// insert implicit braces (or simply a more involved analysis).
 
-	return S.size();
+	// Also try to match preprocessor conditionals...
+	if (result == 0) {
+		clang::Lexer Lexer(PP.getSourceManager().getMainFileID(),
+		                   PP.getSourceManager(),
+		                   PP.getLangOptions());
+		Lexer.LexFromRawLexer(Tok);
+		while (Tok.isNot(clang::tok::eof)) {
+			if (Tok.is(clang::tok::hash)) {
+				Lexer.LexFromRawLexer(Tok);
+				if (clang::IdentifierInfo *II = PP.LookUpIdentifierInfo(Tok)) { 
+					switch (II->getPPKeywordID()) {
+						case clang::tok::pp_if:
+						case clang::tok::pp_ifdef:
+							result++;
+							break;
+						case clang::tok::pp_endif:
+							if (result == 0)
+								return -1; // Nesting error.
+							result--;
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			Lexer.LexFromRawLexer(Tok);
+		}
+	}
+
+	return result;
 }
 
 ParseOperation * Parser::createParseOperation(clang::Diagnostic *diag)
