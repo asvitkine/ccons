@@ -1,5 +1,6 @@
 #include "EditLineReader.h"
 
+#include <string.h>
 #include <limits.h>
 
 #include "complete.h"

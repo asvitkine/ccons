@@ -1,6 +1,8 @@
 #include "InternalCommands.h"
 #include "StringUtils.h"
 
+#include <string.h>
+
 #include <llvm/System/DynamicLibrary.h>
 
 namespace ccons {
