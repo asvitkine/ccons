@@ -1,3 +1,13 @@
+//
+// Parser is used to invoke the clang libraries to perform actual parsing of
+// the input received in the Console.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include "Parser.h"
 
 #include <iostream>

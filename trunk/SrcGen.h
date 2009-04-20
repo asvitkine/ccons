@@ -2,8 +2,8 @@
 #define CCONS_SRC_GEN_H
 
 //
-// SrcGen provides various utility functions for re-writing and generating
-// string with C code for various use cases.
+// Header for SrcGen.cpp, which provides various utility functions for
+// re-writing and generating strings with C code for various use cases.
 //
 // Part of ccons, the interactive console for the C programming language.
 //

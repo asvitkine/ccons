@@ -2,7 +2,7 @@
 #define CCONS_VISITORS_H
 
 //
-// Defined utility visitor classes for operating on the clang AST.
+// Defines utility visitor classes for operating on the clang AST.
 //
 // Part of ccons, the interactive console for the C programming language.
 //

@@ -1,5 +1,5 @@
 //
-// Useful string utility commands used in ccons.
+// Useful string utility functions used by ccons.
 //
 // Part of ccons, the interactive console for the C programming language.
 //

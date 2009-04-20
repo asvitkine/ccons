@@ -1,3 +1,12 @@
+//
+// Utility visitor classes for operating on the clang AST.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include "Visitors.h"
 
 #include <clang/Basic/SourceManager.h>
