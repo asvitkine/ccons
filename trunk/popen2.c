@@ -1,3 +1,12 @@
+//
+// Implementation of popen2() which is a bi-directional variant of popen().
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdio.h>

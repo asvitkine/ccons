@@ -2,7 +2,7 @@
 #define CCONS_STRING_UTILS_H
 
 //
-// Defined useful string utility commands used in ccons.
+// Defines useful string utility functions used by ccons.
 //
 // Part of ccons, the interactive console for the C programming language.
 //
