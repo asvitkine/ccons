@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+log_user 0
+set timeout 2
+
+proc check {input output} {
+    send "$input\n"
+    expect timeout {
+	send_user "Failed: input \"$input\" did not result in \"$output\" \n"
+	exit
+    } "$output"
+}
+
+spawn ../../ccons
+send "int x = 23;\n"
+
+send "#if 0\n"
+send "x -= 10;\n"
+send "#endif\n"
+check "x;" "=> (int) 23"
+
+send "#if 1\n"
+send "x *= 10;\n"
+send "#endif\n"
+check "x;" "=> (int) 230"
+
