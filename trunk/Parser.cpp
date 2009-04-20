@@ -113,8 +113,10 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 
 	clang::Token LastTok;
 	bool TokWasDo = false;
-	unsigned stackSize =
+	int stackSize =
 		analyzeTokens(*parseOp->getPreprocessor(), LastTok, indentLevel, TokWasDo);
+	if (stackSize < 0)
+		return Incomplete;
 
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
@@ -160,10 +162,10 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	return Incomplete;
 }
 
-unsigned Parser::analyzeTokens(clang::Preprocessor& PP,
-                               clang::Token& LastTok,
-                               int& indentLevel,
-                               bool& TokWasDo)
+int Parser::analyzeTokens(clang::Preprocessor& PP,
+                          clang::Token& LastTok,
+													int& indentLevel,
+                          bool& TokWasDo)
 {
 	std::stack<std::pair<clang::Token, clang::Token> > S; // Tok, PrevTok
 
@@ -183,21 +185,21 @@ unsigned Parser::analyzeTokens(clang::Preprocessor& PP,
 		} else if (Tok.is(clang::tok::r_square)) {
 			if (S.empty() || S.top().first.isNot(clang::tok::l_square)) {
 				std::cout << "Unmatched [\n";
-				return Incomplete;
+				return -1;
 			}
 			TokWasDo = false;
 			S.pop();
 		} else if (Tok.is(clang::tok::r_paren)) {
 			if (S.empty() || S.top().first.isNot(clang::tok::l_paren)) {
 				std::cout << "Unmatched (\n";
-				return Incomplete;
+				return -1;
 			}
 			TokWasDo = false;
 			S.pop();
 		} else if (Tok.is(clang::tok::r_brace)) {
 			if (S.empty() || S.top().first.isNot(clang::tok::l_brace)) {
 				std::cout << "Unmatched {\n";
-				return Incomplete;
+				return -1;
 			}
 			TokWasDo = S.top().second.is(clang::tok::kw_do);
 			S.pop();
