@@ -2,6 +2,8 @@
 
 #include <limits.h>
 
+#include "complete.h"
+
 namespace ccons {
 
 namespace {
@@ -11,6 +13,27 @@ static EditLineReader * reader;
 static const char *ccons_prompt(EditLine *e)
 {
 	return (reader ? reader->getPrompt() : "??? ");
+}
+
+static unsigned char ccons_autocomplete(EditLine *e, int ch)
+{
+	const LineInfo *line = el_line(e);
+	const char *path = line->buffer;
+	char insert[1024];
+
+	if (strncmp(path, ":load", 5))
+		return CC_ERROR;
+
+	path += 5;
+	while (isspace(*path)) path++;
+	
+	if (complete(path, insert, sizeof(insert)) > 0) {
+		if (el_insertstr(e, insert) != -1) {
+			return CC_REFRESH;
+		}
+	}
+
+	return CC_ERROR;
 }
 
 } // anon namespace
@@ -24,6 +47,8 @@ EditLineReader::EditLineReader()
 	el_set(_editLine, EL_PROMPT, ccons_prompt);
 	el_set(_editLine, EL_EDITOR, "emacs");
 	el_set(_editLine, EL_HIST, history, _history);
+	el_set(_editLine, EL_ADDFN, "ccons-ac", "autocomplete", ccons_autocomplete);
+	el_set(_editLine, EL_BIND, "^I", "ccons-ac", NULL);
 }
 
 EditLineReader::~EditLineReader()
