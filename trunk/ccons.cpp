@@ -17,8 +17,9 @@
 #include <llvm/System/Signals.h>
 
 #include "Console.h"
-#include "RemoteConsole.h"
 #include "EditLineReader.h"
+#include "InternalCommands.h"
+#include "RemoteConsole.h"
 
 using std::string;
 using ccons::Console;
@@ -65,9 +66,9 @@ static LineReader * createReader()
 
 int main(const int argc, char **argv)
 {
+	llvm::cl::SetVersionPrinter(ccons::PrintVersionInformation);
 	llvm::cl::ParseCommandLineOptions(argc, argv, "ccons Interactive C Console\n",
 	                                  false/*, "ccons-"*/);
-	// TODO SetVersionPrinter()
 
 	if (DebugMode && !SerializedOutput) {
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
