@@ -20,8 +20,10 @@ StdInLineReader::StdInLineReader()
 
 const char * StdInLineReader::readLine(const char *prompt, const char *input)
 {
-	if (std::getline(std::cin, _line))
+	if (std::getline(std::cin, _line)) {
+		_line += "\n";
 		return _line.c_str();
+	}
 
 	return NULL;
 }
