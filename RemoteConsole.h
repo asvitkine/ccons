@@ -64,6 +64,8 @@ private:
 	llvm::OwningPtr<IConsole> _console;
 	std::stringstream _ss_out;
 	std::stringstream _ss_err;
+	FILE *_tmp_out;
+	FILE *_tmp_err;
 
 };
 
