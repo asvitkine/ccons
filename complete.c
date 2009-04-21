@@ -9,11 +9,13 @@
 
 #include "complete.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <limits.h>
 #include <libgen.h>
 #include <dirent.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 
 static char next_prefix_char(DIR *d, const char *prefix, unsigned prefix_length)
 {
@@ -64,8 +66,18 @@ unsigned complete(const char *path, char *suggest, unsigned suggest_length)
 					prefix[sizeof(prefix) - 1] = '\0';
 					while (prefix_len < sizeof(prefix)) {
 						prefix[prefix_len] = next_prefix_char(dd, prefix, prefix_len);
-						if (prefix[prefix_len] == '\0')
+						if (prefix[prefix_len] == '\0') {
+							if (prefix_len > 0 && prefix[prefix_len] != '/') {
+								struct stat f;
+								char newpath[MAXPATHLEN];
+								snprintf(newpath, sizeof(newpath), "%s%s", path, prefix + len);
+								if (!stat(newpath, &f) && S_ISDIR(f.st_mode)) {
+									prefix[prefix_len] = '/';
+									prefix[++prefix_len] = '\0';								
+								}
+							}
 							break;
+						}
 						prefix[++prefix_len] = '\0';
 					}
 					strncpy(suggest, prefix + len, suggest_length - 1);
