@@ -42,6 +42,7 @@ namespace ccons {
 
 class Parser;
 class DiagnosticsProvider;
+class MacroDetector;
 
 class IConsole {
 
@@ -112,6 +113,7 @@ private:
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<DiagnosticsProvider> _dp;
+	MacroDetector *_macros;
 	std::vector<CodeLine> _lines;
 	std::string _buffer;
 	std::string _prompt;

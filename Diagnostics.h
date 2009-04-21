@@ -11,6 +11,7 @@
 //
 
 #include <set>
+#include <map>
 
 #include <llvm/Support/raw_ostream.h>
 
@@ -41,6 +42,27 @@ private:
 	std::set<std::pair<clang::diag::kind, unsigned> > _memory;
 
 };
+
+
+class ProxyDiagnosticClient : public clang::DiagnosticClient {
+
+public:
+
+	ProxyDiagnosticClient(clang::DiagnosticClient *DC);
+
+	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
+	                      const clang::DiagnosticInfo &Info);
+
+	bool hadError(clang::diag::kind Kind) const;
+	bool hadErrors() const;
+
+private:
+
+	clang::DiagnosticClient *_DC;
+	std::multimap<clang::diag::kind, const clang::DiagnosticInfo> _errors;
+
+};
+
 
 } // namespace ccons
 

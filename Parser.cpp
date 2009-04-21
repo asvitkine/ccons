@@ -16,10 +16,12 @@
 
 #include <llvm/Config/config.h>
 
+#include <clang/AST/AST.h>
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Frontend/InitHeaderSearch.h>
 #include <clang/Lex/HeaderSearch.h>
+#include <clang/Lex/LexDiagnostic.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/ParseAST.h>
 #include <clang/Sema/SemaDiagnostic.h>
@@ -27,7 +29,7 @@
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/Diagnostic.h>
 
-#include "ClangUtils.h"
+#include "Diagnostics.h"
 #include "SrcGen.h"
 
 // Temporary Hax:
@@ -44,7 +46,8 @@ namespace ccons {
 
 ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::TargetInfo& target,
-                               clang::Diagnostic *diag) :
+                               clang::Diagnostic *diag,
+                               clang::PPCallbacks *callbacks) :
 	_sm(new clang::SourceManager),
 	_fm(new clang::FileManager),
 	_hs(new clang::HeaderSearch(*_fm))
@@ -54,6 +57,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	ihs.AddDefaultSystemIncludePaths(options);
 	ihs.Realize();
 	_pp.reset(new clang::Preprocessor(*diag, options, target, *_sm, *_hs));
+	_pp->setPPCallbacks(callbacks);
 	InitializePreprocessor(*_pp);
 	_ast.reset(new clang::ASTContext(options, *_sm, target,
 		_pp->getIdentifierTable(), _pp->getSelectorTable()));
@@ -139,6 +143,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		diag.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
 		struct : public clang::ASTConsumer {
+			bool hadIncludedDecls;
 			unsigned pos;
 			unsigned maxPos;
 			clang::SourceManager *sm;
@@ -152,18 +157,24 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 							if (offset >= pos) {
 								fds.push_back(FD);
 							}
+						} else {
+						  hadIncludedDecls = true;
 						}
 					}
 				}
 			}
 		} consumer;
 		ParseOperation *parseOp = createParseOperation(&diag);
+		consumer.hadIncludedDecls = false;
 		consumer.pos = contextSource.length();
 		consumer.maxPos = consumer.pos + buffer.length();
 		consumer.sm = parseOp->getSourceManager();
 		parse(src, parseOp, &consumer);
-		if (!pdc.hadErrors() && !consumer.fds.empty()) {
-			fds->swap(consumer.fds);
+		if (pdc.hadError(clang::diag::err_unterminated_block_comment))
+			return Incomplete;
+		if (!pdc.hadErrors() && (!consumer.fds.empty() || consumer.hadIncludedDecls)) {
+			if (!consumer.fds.empty())
+				fds->swap(consumer.fds);
 			return TopLevel;
 		}
 		return Stmt;
@@ -269,9 +280,10 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 	return result;
 }
 
-ParseOperation * Parser::createParseOperation(clang::Diagnostic *diag)
+ParseOperation * Parser::createParseOperation(clang::Diagnostic *diag,
+                                              clang::PPCallbacks *callbacks)
 {
-	return new ParseOperation(_options, *_target, diag);
+	return new ParseOperation(_options, *_target, diag, callbacks);
 }
 
 void Parser::parse(const string& src,
