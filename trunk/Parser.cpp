@@ -20,6 +20,7 @@
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Frontend/InitHeaderSearch.h>
+#include <clang/Frontend/InitPreprocessor.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/LexDiagnostic.h>
 #include <clang/Lex/Preprocessor.h>
@@ -31,9 +32,6 @@
 
 #include "Diagnostics.h"
 #include "SrcGen.h"
-
-// Temporary Hax:
-#include "InitPP.cpp"
 
 using std::string;
 
@@ -58,7 +56,8 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	ihs.Realize();
 	_pp.reset(new clang::Preprocessor(*diag, options, target, *_sm, *_hs));
 	_pp->setPPCallbacks(callbacks);
-	InitializePreprocessor(*_pp);
+	clang::PreprocessorInitOptions ppOptions;
+	InitializePreprocessor(*_pp, "", ppOptions);
 	_ast.reset(new clang::ASTContext(options, *_sm, target,
 		_pp->getIdentifierTable(), _pp->getSelectorTable()));
 }
