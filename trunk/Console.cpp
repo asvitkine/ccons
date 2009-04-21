@@ -269,9 +269,15 @@ void Console::printGV(const llvm::Function *F,
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
-			if (p && QT->isPointerType() &&
-			    QT->getAsPointerType()->getPointeeType()->isCharType() &&
-			    shouldPrintCString((const char *) p)) {
+			bool couldBeString = false;
+			if (const clang::PointerType *PT = QT->getAsPointerType()) {
+				couldBeString = PT->getPointeeType()->isCharType();
+			} else if (QT->isArrayType()) {
+				if (const clang::ArrayType *AT = dyn_cast<clang::ArrayType>(QT)) {
+					couldBeString = AT->getElementType()->isCharType();
+				}
+			}
+			if (p && couldBeString && shouldPrintCString((const char *) p)) {
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			} else if (QT->isFunctionType()) {
 				string str = "*";
