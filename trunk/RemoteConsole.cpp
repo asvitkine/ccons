@@ -281,30 +281,51 @@ const char * SerializedOutputConsole::input() const
 	return _console->input();
 }
 
+namespace {
+
+class StreamInterceptor {
+
+public:
+	
+	StreamInterceptor(FILE **stream, FILE *tmp_file)
+		: _stream(stream)
+		, _orig_stream(*stream)
+		, _tmp_file(tmp_file)
+	{
+		rewind(_tmp_file);
+		ftruncate(fileno(_tmp_file), 0);
+		*_stream = _tmp_file;
+	}
+
+	void getInterceptedOutput(std::stringstream& ss_out) {
+		char buf[16 * 1024];
+		*buf = '\0';
+		rewind(_tmp_file);
+		size_t nread = fread(buf, 1, sizeof(buf), _tmp_file);
+		buf[nread] = '\0';
+		ss_out << buf;
+		*_stream = _orig_stream;
+	}
+
+private:
+
+	FILE **_stream;
+	FILE *_orig_stream;
+	FILE *_tmp_file;
+
+};
+
+} // anon namespace
+
 void SerializedOutputConsole::process(const char *line)
 {
 	_ss_out.str("");
 	_ss_err.str("");
-	FILE *old_stdout = stdout;
-	FILE *old_stderr = stderr;
-	stdout = _tmp_out;
-	rewind(_tmp_out);
-	ftruncate(fileno(_tmp_out), 0);
-	stderr = _tmp_err;
-	rewind(_tmp_err);
-	ftruncate(fileno(_tmp_err), 0);
+	StreamInterceptor iout(&stdout, _tmp_out);
+	StreamInterceptor ierr(&stderr, _tmp_err);
 	_console->process(line);
-	char buf[16 * 1024];
-	*buf = '\0';
-	rewind(stdout);
-	fread(buf, sizeof(buf), 1, stdout);
-	stdout = old_stdout;
-	_ss_out << buf;
-	*buf = '\0';
-	rewind(stderr);
-	fread(buf, sizeof(buf), 1, stderr);
-	stderr = old_stderr;
-	_ss_err << buf;
+	iout.getInterceptedOutput(_ss_out);
+	ierr.getInterceptedOutput(_ss_err);
 	string str;
 	SerializedConsoleOutput sco(_ss_out.str(),
 	                            _ss_err.str(),
