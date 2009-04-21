@@ -252,6 +252,8 @@ void RemoteConsole::process(const char *line)
 
 SerializedOutputConsole::SerializedOutputConsole(bool DebugMode)
 	: _console(new Console(DebugMode, _ss_out, _ss_err))
+	, _tmp_out(tmpfile())
+	, _tmp_err(tmpfile())
 {
 	signal(SIGBUS, gotsig);
 	signal(SIGSEGV, gotsig);
@@ -285,8 +287,12 @@ void SerializedOutputConsole::process(const char *line)
 	_ss_err.str("");
 	FILE *old_stdout = stdout;
 	FILE *old_stderr = stderr;
-	stdout = tmpfile();
-	stderr = tmpfile();
+	stdout = _tmp_out;
+	rewind(_tmp_out);
+	ftruncate(fileno(_tmp_out), 0);
+	stderr = _tmp_err;
+	rewind(_tmp_err);
+	ftruncate(fileno(_tmp_err), 0);
 	_console->process(line);
 	char buf[16 * 1024];
 	*buf = '\0';
