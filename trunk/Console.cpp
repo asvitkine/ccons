@@ -269,7 +269,9 @@ void Console::printGV(const llvm::Function *F,
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
-			if (p && !strncmp(type, "char", 4) && shouldPrintCString((char *) p)) {
+			if (p && QT->isPointerType() &&
+			    QT->getAsPointerType()->getPointeeType()->isCharType() &&
+			    shouldPrintCString((const char *) p)) {
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			} else if (QT->isFunctionType()) {
 				string str = "*";
