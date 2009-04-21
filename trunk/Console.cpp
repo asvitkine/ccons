@@ -139,7 +139,7 @@ void Console::reportInputError()
 	_err << "\nNote: Last input ignored due to errors.\n";
 }
 
-string Console::genSource(string appendix) const
+string Console::genSource(const std::string& appendix) const
 {
 	string src;
 	for (unsigned i = 0; i < _lines.size(); ++i) {
@@ -151,6 +151,7 @@ string Console::genSource(string appendix) const
 			src += "\n";
 		}
 	}
+	_dp->setOffset(src.length());
 	src += appendix;
 	return src;
 }
@@ -426,6 +427,8 @@ void Console::process(const char *line)
 	if (_buffer.empty() && HandleInternalCommand(line, _debugMode, _out, _err))
 		return;
 
+	_dp.reset(new DiagnosticsProvider(_raw_err, _options));
+
 	string src = genSource("");	
 
 	_buffer += line;
@@ -444,8 +447,6 @@ void Console::process(const char *line)
 			_input = "";
 			break;
 	}
-
-	_dp.reset(new DiagnosticsProvider(_raw_err, _options));
 
 	if (shouldBeTopLevel) {
 		if (_debugMode)

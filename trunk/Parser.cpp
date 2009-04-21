@@ -129,7 +129,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	int stackSize =
 		analyzeTokens(*parseOp->getPreprocessor(), LastTok, indentLevel, TokWasDo);
 	if (stackSize < 0)
-		return Incomplete;
+		return TopLevel;
 
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
