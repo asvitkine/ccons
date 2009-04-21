@@ -57,6 +57,9 @@ bool HandleInternalCommand(const char *input, bool debugMode,
 			oprintf(out, "The following commands are available:\n");
 			oprintf(out, "  :help - displays this message\n");
 			oprintf(out, "  :load <library path> - dynamically loads specified library\n");
+			oprintf(out, "  :version - displays ccons version information\n");
+		} else if (!strncmp(input, "version", 7)) {
+			PrintVersionInformation(out);
 		} else if (!strncmp(input, "load", 4)) {
 			HandleLoadCommand(argp, debugMode, out, err);
 		} else {
@@ -65,6 +68,18 @@ bool HandleInternalCommand(const char *input, bool debugMode,
 		return true;
 	}
 	return false;
+}
+
+void PrintVersionInformation(std::ostream& out)
+{
+	oprintf(out, "ccons version 0.1 by Alexei Svitkine\n");
+	oprintf(out, "Interactive Console for the C Programming Language\n");
+	oprintf(out, "http://code.google.com/p/ccons\n");
+}
+
+void PrintVersionInformation()
+{
+	PrintVersionInformation(std::cout);
 }
 
 } // namespace ccons

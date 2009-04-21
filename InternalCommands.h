@@ -18,6 +18,9 @@ namespace ccons {
 bool HandleInternalCommand(const char *input, bool debugMode,
                            std::ostream& out, std::ostream& err);
 
+void PrintVersionInformation(std::ostream& out);
+void PrintVersionInformation();
+
 } // namespace ccons
 
 #endif // CCONS_INTERNAL_COMMANDS_H
