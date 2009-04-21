@@ -283,7 +283,22 @@ void SerializedOutputConsole::process(const char *line)
 {
 	_ss_out.str("");
 	_ss_err.str("");
+	FILE *old_stdout = stdout;
+	FILE *old_stderr = stderr;
+	stdout = tmpfile();
+	stderr = tmpfile();
 	_console->process(line);
+	char buf[16 * 1024];
+	*buf = '\0';
+	rewind(stdout);
+	fread(buf, sizeof(buf), 1, stdout);
+	stdout = old_stdout;
+	_ss_out << buf;
+	*buf = '\0';
+	rewind(stderr);
+	fread(buf, sizeof(buf), 1, stderr);
+	stderr = old_stderr;
+	_ss_err << buf;
 	string str;
 	SerializedConsoleOutput sco(_ss_out.str(),
 	                            _ss_err.str(),
