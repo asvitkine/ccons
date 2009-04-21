@@ -2,7 +2,7 @@
 #define CCONS_CONSOLE_H
 
 //
-// Defined the IConsole interface used by ccons.cpp to process user input,
+// Defines the IConsole interface used by ccons.cpp to process user input,
 // as well as the concrete Console class, implementing said interface and
 // providing C input processing using the clang and llvm libraries.
 //
