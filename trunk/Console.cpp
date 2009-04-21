@@ -10,6 +10,9 @@
 
 #include "Console.h"
 
+#include <errno.h>
+#include <ctype.h>
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -106,7 +109,8 @@ Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_err(err),
 	_raw_err(err),
 	_prompt(">>> "),
-	_funcNo(0)
+	_funcNo(0),
+	_tempFile(NULL)
 {
 	_options.C99 = true;
 	_parser.reset(new Parser(_options));
@@ -219,9 +223,32 @@ clang::Stmt * Console::locateStmt(const std::string& line,
 	return finder.getStmt();
 }
 
+bool Console::shouldPrintCString(const char *p)
+{
+	if (!p)
+		return false;
+	if (!_tempFile)
+		_tempFile = tmpfile();
+	int fd = fileno(_tempFile);
+	// Using write(2), check whether p is readable and null-terminated.
+	for (int i = 0; i < 100; i++) {
+		int result = write(fd, p, 1);
+		if (result == -1)
+			break;
+		if (result == 1) {
+			if (*p == '\0')
+				return true;
+			if (!isgraph(*p))
+				return false;
+			p++;
+		}
+	}
+	return false;
+}
+
 void Console::printGV(const llvm::Function *F,
                       const llvm::GenericValue& GV,
-                      const clang::QualType& QT) const
+                      const clang::QualType& QT)
 {
 	const char *type = QT.getAsString().c_str();
 	const llvm::FunctionType *FTy = F->getFunctionType();
@@ -241,8 +268,7 @@ void Console::printGV(const llvm::Function *F,
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
-			// FIXME: this is a hack
-			if (p && !strncmp(type, "char", 4)) {
+			if (p && !strncmp(type, "char", 4) && shouldPrintCString((char *) p)) {
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			} else if (QT->isFunctionType()) {
 				string str = "*";

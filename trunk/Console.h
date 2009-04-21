@@ -12,6 +12,8 @@
 // terms of MIT Open Source License. See file LICENSE for details.
 //
 
+#include <stdio.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -79,9 +81,11 @@ private:
 	typedef std::pair<std::string, LineType> CodeLine;
 
 	void reportInputError();
+
+	bool shouldPrintCString(const char *p);
 	void printGV(const llvm::Function *F,
 	             const llvm::GenericValue& GV,
-	             const clang::QualType& QT) const;
+	             const clang::QualType& QT);
 	bool handleDeclStmt(const clang::DeclStmt *DS,
 	                    const std::string& src,
 	                    std::string *appendix,
@@ -119,6 +123,7 @@ private:
 	std::string _prompt;
 	std::string _input;
 	unsigned _funcNo;
+	FILE *_tempFile;
 
 };
 
