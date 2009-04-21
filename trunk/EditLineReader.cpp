@@ -29,14 +29,18 @@ static const char *ccons_prompt(EditLine *e)
 static unsigned char ccons_autocomplete(EditLine *e, int ch)
 {
 	const LineInfo *line = el_line(e);
-	const char *path = line->buffer;
-	char insert[1024];
+	char path[1024], insert[1024];
+	const char *p = line->buffer;
 
-	if (strncmp(path, ":load", 5))
+	if (strncmp(p, ":load", 5))
 		return CC_ERROR;
 
-	path += 5;
-	while (isspace(*path)) path++;
+	p += 5;
+	while (isspace(*p)) p++;
+
+	int len = std::max(0, std::min<int>(sizeof(path) - 1, line->cursor - p));
+	strncpy(path, p, len);
+	path[len] = '\0';
 	
 	if (complete(path, insert, sizeof(insert)) > 0) {
 		if (el_insertstr(e, insert) != -1) {
