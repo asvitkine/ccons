@@ -386,6 +386,8 @@ string Console::genAppendix(const char *source,
 			moreLines->push_back(CodeLine(line, StmtLine));
 			wasExpr = true;
 		} else if (const clang::DeclStmt *DS = dyn_cast<clang::DeclStmt>(S)) {
+			if (_debugMode)
+				oprintf(_err, "Processing DeclStmt.\n");
 			if (!handleDeclStmt(DS, src, &appendix, &funcBody, moreLines)) {
 				moreLines->push_back(CodeLine(line, DeclLine));
 				appendix += line;
@@ -399,24 +401,6 @@ string Console::genAppendix(const char *source,
 		reportInputError();
 		*hadErrors = true;
 	} else {
-		ParseOperation *op = _parser->getLastParseOperation();
-		clang::SourceManager *sm = op->getSourceManager();
-		clang::FileID mainFileID = sm->getMainFileID();
-		std::pair<const char*, const char*> buf = sm->getBufferData(mainFileID);
-		clang::Preprocessor *pp = op->getPreprocessor();
-		clang::Preprocessor::macro_iterator I, E;
-		for (I = pp->macro_begin(), E = pp->macro_end(); I != E; ++I) {
-			clang::MacroInfo *macro = I->second;
-			if (macro->isBuiltinMacro())
-				continue;
-			clang::SourceLocation Loc = macro->getDefinitionLoc();
-			if (sm->getFileID(Loc) == mainFileID) {
-				SrcRange range = getMacroRange(macro, *sm, pp->getLangOptions());
-				string def = string(buf.first + range.first, range.second - range.first);
-				//oprintf(_err, "[#define %s]\n", def.c_str());
-				moreLines->push_back(CodeLine("#define " + def, PrprLine));
-			}
-		}
 		funcBody = line;
 	}
 
