@@ -1,3 +1,13 @@
+//
+// Implementation of Console class, which is derived from IConsole,
+// providing C input processing using the clang and llvm libraries.
+//
+// Part of ccons, the interactive console for the C programming language.
+//
+// Copyright (c) 2009 Alexei Svitkine. This file is distributed under the
+// terms of MIT Open Source License. See file LICENSE for details.
+//
+
 #include "Console.h"
 
 #include <iostream>
@@ -21,6 +31,7 @@
 #include <clang/Frontend/CompileOptions.h>
 #include <clang/CodeGen/ModuleBuilder.h>
 #include <clang/Lex/Preprocessor.h>
+#include <clang/Lex/MacroInfo.h>
 
 #include "ClangUtils.h"
 #include "Diagnostics.h"
@@ -33,6 +44,61 @@
 using std::string;
 
 namespace ccons {
+
+//
+// MacroDetector
+//
+
+class MacroDetector : public clang::PPCallbacks
+{
+
+public:
+
+	MacroDetector(const clang::LangOptions& options) : _options(options) {}
+
+	void setSourceManager(clang::SourceManager *sm) { _sm = sm; }
+	std::vector<string>& getMacrosVector() { return _macros; }
+
+	void MacroDefined(const clang::IdentifierInfo *II,
+	                  const clang::MacroInfo *MI) {
+		if (MI->isBuiltinMacro())
+			return;
+		clang::FileID mainFileID = _sm->getMainFileID();
+		if (_sm->getFileID(MI->getDefinitionLoc()) == mainFileID) {
+			std::pair<const char*, const char*> buf = _sm->getBufferData(mainFileID);
+			SrcRange range = getMacroRange(MI, *_sm, _options);
+			string str(buf.first + range.first, range.second - range.first);
+			_macros.push_back("#define " + str);
+		}
+	}
+
+	void MacroUndefined(const clang::IdentifierInfo *II,
+	                    const clang::MacroInfo *MI) {
+		if (MI->isBuiltinMacro())
+			return;
+		clang::FileID mainFileID = _sm->getMainFileID();
+		if (_sm->getFileID(MI->getDefinitionLoc()) == mainFileID) {
+			std::pair<const char*, const char*> buf = _sm->getBufferData(mainFileID);
+			SrcRange range = getMacroRange(MI, *_sm, _options);
+			string str(buf.first + range.first, range.second - range.first);
+			size_t pos = str.find(' ');
+			if (pos != string::npos)
+				str = str.substr(0, pos);
+			_macros.push_back("#undef " + str);
+		}
+	}
+
+private:
+
+	const clang::LangOptions& _options;
+	clang::SourceManager* _sm;
+	std::vector<string> _macros;
+
+};
+
+//
+// Console
+//
 
 Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_debugMode(debugMode),
@@ -307,6 +373,24 @@ string Console::genAppendix(const char *source,
 		reportInputError();
 		*hadErrors = true;
 	} else {
+		ParseOperation *op = _parser->getLastParseOperation();
+		clang::SourceManager *sm = op->getSourceManager();
+		clang::FileID mainFileID = sm->getMainFileID();
+		std::pair<const char*, const char*> buf = sm->getBufferData(mainFileID);
+		clang::Preprocessor *pp = op->getPreprocessor();
+		clang::Preprocessor::macro_iterator I, E;
+		for (I = pp->macro_begin(), E = pp->macro_end(); I != E; ++I) {
+			clang::MacroInfo *macro = I->second;
+			if (macro->isBuiltinMacro())
+				continue;
+			clang::SourceLocation Loc = macro->getDefinitionLoc();
+			if (sm->getFileID(Loc) == mainFileID) {
+				SrcRange range = getMacroRange(macro, *sm, pp->getLangOptions());
+				string def = string(buf.first + range.first, range.second - range.first);
+				//oprintf(_err, "[#define %s]\n", def.c_str());
+				moreLines->push_back(CodeLine("#define " + def, PrprLine));
+			}
+		}
 		funcBody = line;
 	}
 
@@ -357,11 +441,16 @@ void Console::process(const char *line)
 		if (_debugMode)
 			oprintf(_err, "Treating input as top-level.\n");
 		appendix = _buffer;
-		oprintf(_err, "Recording %d function declaration%s...\n",
-		              fnDecls.size(), fnDecls.size() == 1 ? "" : "s");
-		for (unsigned i = 0; i < fnDecls.size(); ++i)
-			linesToAppend.push_back(CodeLine(getFunctionDeclAsString(fnDecls[i]), DeclLine));
 		_buffer.clear();
+		if (!fnDecls.empty()) {
+			if (_debugMode)
+				oprintf(_err, "Recording %d function declaration%s...\n",
+				        fnDecls.size(), fnDecls.size() == 1 ? "" : "s");
+			for (unsigned i = 0; i < fnDecls.size(); ++i)
+				linesToAppend.push_back(CodeLine(getFunctionDeclAsString(fnDecls[i]), DeclLine));
+		} else if (appendix[0] == '#') {
+			linesToAppend.push_back(CodeLine(appendix, PrprLine));
+		}
 
 		if (hadErrors)
 			return;
@@ -372,6 +461,9 @@ void Console::process(const char *line)
 		if (compileLinkAndRun(src, empty, retType)) {
 			for (unsigned i = 0; i < linesToAppend.size(); ++i)
 				_lines.push_back(linesToAppend[i]);
+			std::vector<string>& macros = _macros->getMacrosVector();
+			for (unsigned i = 0; i < macros.size(); ++i)
+				_lines.push_back(CodeLine(macros[i], PrprLine));
 		}
 	} else {
 		if (_debugMode)
@@ -394,9 +486,11 @@ void Console::process(const char *line)
 			src = genSource(appendix);
 
 			if (compileLinkAndRun(src, fName, retType)) {
-				for (unsigned i = 0; i < linesToAppend.size(); ++i) {
+				for (unsigned i = 0; i < linesToAppend.size(); ++i)
 					_lines.push_back(linesToAppend[i]);
-				}
+				std::vector<string>& macros = _macros->getMacrosVector();
+				for (unsigned i = 0; i < macros.size(); ++i)
+					_lines.push_back(CodeLine(macros[i], PrprLine));
 			}
 		}
 	}
@@ -415,7 +509,11 @@ bool Console::compileLinkAndRun(const string& src,
 	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
-	_parser->parse(src, _dp->getDiagnostic(), codegen.get());
+	_macros = new MacroDetector(_options);
+	ParseOperation *parseOp =
+	  _parser->createParseOperation(_dp->getDiagnostic(), _macros);
+	_macros->setSourceManager(parseOp->getSourceManager());
+	_parser->parse(src, parseOp, codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
 		reportInputError();
 		return false;

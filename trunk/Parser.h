@@ -27,6 +27,7 @@ namespace clang {
 	class Diagnostic;
 	class FunctionDecl;
 	class Preprocessor;
+	class PPCallbacks;
 	class SourceManager;
 	class TargetInfo;
 	class Token;
@@ -35,13 +36,18 @@ namespace clang {
 
 namespace ccons {
 
+//
+// ParseOperation
+// 
+
 class ParseOperation {
 
 public:
 	
 	ParseOperation(const clang::LangOptions& options,
 	               clang::TargetInfo& target,
-	               clang::Diagnostic *diag);
+	               clang::Diagnostic *diag,
+	               clang::PPCallbacks *callbacks = 0);
 
   clang::ASTContext * getASTContext() const;
 	clang::Preprocessor * getPreprocessor() const;
@@ -56,6 +62,11 @@ private:
 	llvm::OwningPtr<clang::ASTContext> _ast;
 
 };
+
+
+//
+// Parser
+// 
 
 class Parser {
 
@@ -73,7 +84,8 @@ public:
 
 	// Create a new ParseOperation that the caller should take ownership of
 	// and the lifetime of which must be shorter than of the Parser.
-	ParseOperation * createParseOperation(clang::Diagnostic *diag);
+	ParseOperation * createParseOperation(clang::Diagnostic *diag,
+	                                      clang::PPCallbacks *callbacks = 0);
 
 	// Parse the specified source code with the specified parse operation
 	// and consumer. Upon parsing, ownership of parseOp is transferred to
