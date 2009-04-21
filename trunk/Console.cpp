@@ -136,7 +136,7 @@ const char * Console::input() const
 
 void Console::reportInputError()
 {
-	_err << "\nNote: Last line ignored due to errors.\n";
+	_err << "\nNote: Last input ignored due to errors.\n";
 }
 
 string Console::genSource(string appendix) const
