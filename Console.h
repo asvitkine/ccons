@@ -97,7 +97,7 @@ private:
 	                        clang::QualType& QT,
 	                        std::vector<CodeLine> *moreLines,
 	                        bool *hadErrors);
-	std::string genSource(std::string appendix) const;
+	std::string genSource(const std::string& appendix) const;
 	int splitInput(const std::string& source,
 	               const std::string& input,
 	               std::vector<std::string> *statements);
