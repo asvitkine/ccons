@@ -14,6 +14,8 @@
 extern "C" {
 #endif
 
+// Auto-complete the specified path. Returns number of characters copied into
+// suggest, or 0 if no completion suggestion was available.
 unsigned complete(const char *path, char *suggest, unsigned suggest_length);
 
 #ifdef __cplusplus
