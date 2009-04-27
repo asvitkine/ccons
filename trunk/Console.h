@@ -55,8 +55,14 @@ class IConsole {
 public:
 
 	virtual ~IConsole() {}
+
+	// Returns the prompt that should be presented to the user.
 	virtual const char * prompt() const = 0;
+
+	// Returns the initial input string that should be prepended.
 	virtual const char * input() const = 0;
+
+	// Process the specified line of user input.
 	virtual void process(const char *line) = 0;
 
 };
