@@ -417,7 +417,7 @@ string Console::genAppendix(const char *source,
 		*fName = "__ccons_anon" + to_string(_funcNo++);
 		int bodyOffset;
 		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
-		appendix += genFunc(wasExpr ? &QT : NULL, context, *fName, funcBody, bodyOffset);
+		appendix += genFunction(wasExpr ? &QT : NULL, context, *fName, funcBody, bodyOffset);
 		_dp->setOffset(bodyOffset + strlen(source));
 		if (_debugMode)
 			oprintf(_err, "Generating function %s()...\n", fName->c_str());

@@ -77,6 +77,7 @@ public:
 
 	enum InputType { Incomplete, TopLevel, Stmt }; 
 
+  // Analyze the specified input to determine whether its complete or not.
 	InputType analyzeInput(const std::string& contextSource,
 	                       const std::string& buffer,
 	                       int& indentLevel,
@@ -100,7 +101,11 @@ public:
 	           clang::Diagnostic *diag,
 						 clang::ASTConsumer *consumer);
 
+	// Returns the last parse operation or NULL if there isn't one.
   ParseOperation * getLastParseOperation() const;
+
+	// Release any accumulated parse operations (including their resulting
+	// ASTs and other clang data structures).
 	void releaseAccumulatedParseOperations();
 
 private:

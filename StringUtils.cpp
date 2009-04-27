@@ -14,6 +14,7 @@
 
 namespace ccons {
 
+// Like vsprintf(), but to a std::string.
 void vstring_printf(std::string *dst, const char *fmt, va_list ap)
 {
 	char *s;
@@ -23,6 +24,7 @@ void vstring_printf(std::string *dst, const char *fmt, va_list ap)
 	}
 }
 
+// Like sprintf(), but to a std::string.
 void string_printf(std::string *dst, const char *fmt, ...)
 {
 	va_list ap;
@@ -31,6 +33,7 @@ void string_printf(std::string *dst, const char *fmt, ...)
 	va_end(ap);
 }
 
+// Like printf(), but to a std::ostream.
 void oprintf(std::ostream& out, const char *fmt, ...)
 {
 	std::string str;

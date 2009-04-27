@@ -16,6 +16,7 @@
 
 namespace ccons {
 
+// Loads the library that was specified. 
 static void HandleLoadCommand(const char *arg, bool debugMode,
                               std::ostream& out, std::ostream& err)
 {
@@ -36,6 +37,8 @@ static void HandleLoadCommand(const char *arg, bool debugMode,
 	}
 }
 
+// Handle an internal command if it was specified. If handled, returns
+// true; otherwise the input did not correspond to an internal command.
 bool HandleInternalCommand(const char *input, bool debugMode,
                            std::ostream& out, std::ostream& err)
 {
@@ -70,6 +73,7 @@ bool HandleInternalCommand(const char *input, bool debugMode,
 	return false;
 }
 
+// Prints ccons version information to the specified ostream.
 void PrintVersionInformation(std::ostream& out)
 {
 	oprintf(out, "ccons version 0.1 by Alexei Svitkine\n");
@@ -77,6 +81,7 @@ void PrintVersionInformation(std::ostream& out)
 	oprintf(out, "http://code.google.com/p/ccons\n");
 }
 
+// Prints ccons version information to std::out.
 void PrintVersionInformation()
 {
 	PrintVersionInformation(std::cout);

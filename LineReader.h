@@ -15,6 +15,10 @@
 
 namespace ccons {
 
+//
+// LineReader interface
+//
+
 class LineReader {
 
 public:
@@ -23,6 +27,10 @@ public:
 	virtual const char * readLine(const char *prompt, const char *input) = 0;
 
 };
+
+//
+// StdInLineReader simply reads lines from stdin.
+//
 
 class StdInLineReader : public LineReader {
 
