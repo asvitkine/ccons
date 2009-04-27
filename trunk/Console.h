@@ -46,6 +46,10 @@ class Parser;
 class DiagnosticsProvider;
 class MacroDetector;
 
+//
+// IConsole interface
+//
+
 class IConsole {
 
 public:
@@ -56,6 +60,10 @@ public:
 	virtual void process(const char *line) = 0;
 
 };
+
+//
+// Console implementation
+//
 
 class Console : public IConsole {
 

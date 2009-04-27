@@ -25,17 +25,25 @@ namespace clang {
 
 namespace ccons {
 
+// Pair of start, end positions in the source.
 typedef std::pair<unsigned, unsigned> SrcRange;
 
+// Get the source range of the specified Stmt.
 SrcRange getStmtRange(const clang::Stmt *S,
                       const clang::SourceManager& sm,
                       const clang::LangOptions& options);
+
+// Get the source range of the specified Stmt, ensuring that a semicolon is
+// included, if necessary - since the clang ranges do not guarantee this.
 SrcRange getStmtRangeWithSemicolon(const clang::Stmt *S,
                                    const clang::SourceManager& sm,
                                    const clang::LangOptions& options);
+
+// Get the source range of the macro definition excluding the #define.
 SrcRange getMacroRange(const clang::MacroInfo *MI,
                        const clang::SourceManager& sm,
                        const clang::LangOptions& options);
+
 } // namespace ccons
 
 #endif // CCONS_CLANG_UTILS_H

@@ -21,6 +21,11 @@
 
 namespace ccons {
 
+//
+// DiagnosticsProvider provides a re-usable clang::Diagnostic object
+// that can be used for multiple parse operations.
+//
+
 class DiagnosticsProvider : public clang::DiagnosticClient {
 
 public:
@@ -43,6 +48,10 @@ private:
 
 };
 
+
+//
+// ProxyDiagnosticClient can act as a proxy to another diagnostic client.
+//
 
 class ProxyDiagnosticClient : public clang::DiagnosticClient {
 

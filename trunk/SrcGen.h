@@ -23,12 +23,19 @@ namespace ccons {
 
 class Parser;
 
+// Generate a variable declaration (like "int i;") for the specified type
+// and variable name. Works for non-trivial types like function pointers.
 std::string genVarDecl(const clang::QualType& type, const std::string& vName);
-std::string genFunc(const clang::QualType *retType,
-                    clang::ASTContext *context,
-                    const std::string& fName,
-                    const std::string& fBody,
-                    int& bodyOffset);
+
+// Generate a function definition with the specified parameters. Returns
+// the offset of the start of the body in variable bodyOffset.
+std::string genFunction(const clang::QualType *retType,
+                        clang::ASTContext *context,
+                        const std::string& fName,
+                        const std::string& fBody,
+                        int& bodyOffset);
+
+// Get the function declaration as a string, from the FunctionDecl specified.
 std::string getFunctionDeclAsString(const clang::FunctionDecl *FD);
 
 } // namespace ccons

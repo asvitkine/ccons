@@ -18,18 +18,21 @@ using std::string;
 
 namespace ccons {
 
-// Properly handles function pointer variables.
+// Generate a variable declaration (like "int i;") for the specified type
+// and variable name. Works for non-trivial types like function pointers.
 string genVarDecl(const clang::QualType& type, const string& vName) {
 	string str = vName;
 	type.getUnqualifiedType().getAsStringInternal(str);
 	return str;
 }
 
-string genFunc(const clang::QualType *retType,
-               clang::ASTContext *context,
-               const string& fName,
-               const string& fBody,
-               int& bodyOffset)
+// Generate a function definition with the specified parameters. Returns
+// the offset of the start of the body in variable bodyOffset.
+string genFunction(const clang::QualType *retType,
+                   clang::ASTContext *context,
+                   const string& fName,
+                   const string& fBody,
+                   int& bodyOffset)
 {
 	string func;
 	if (!retType || (*retType)->isStructureType()) {
@@ -59,6 +62,7 @@ string genFunc(const clang::QualType *retType,
 	return func;
 }
 
+// Get the function declaration as a string, from the FunctionDecl specified.
 std::string getFunctionDeclAsString(const clang::FunctionDecl *FD)
 {
 	const clang::FunctionType *FT = FD->getType()->getAsFunctionType();

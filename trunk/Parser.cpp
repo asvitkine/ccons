@@ -105,7 +105,7 @@ void Parser::releaseAccumulatedParseOperations()
 
 ParseOperation * Parser::getLastParseOperation() const
 {
-	return _ops.back();
+	return _ops.empty() ? NULL : _ops.back();
 }
 
 Parser::InputType Parser::analyzeInput(const string& contextSource,

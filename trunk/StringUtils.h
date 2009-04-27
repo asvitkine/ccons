@@ -16,10 +16,16 @@
 
 namespace ccons {
 
+// Like vsprintf(), but to a std::string.
 void vstring_printf(std::string *dst, const char *fmt, va_list ap);
+
+// Like sprintf(), but to a std::string.
 void string_printf(std::string *dst, const char *fmt, ...);
+
+// Like printf(), but to a std::ostream.
 void oprintf(std::ostream& out, const char *fmt, ...);
 
+// Convert specified value to a std::string using a std::stringstream.
 template<typename T>
 inline std::string to_string(const T& t)
 {

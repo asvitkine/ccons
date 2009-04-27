@@ -22,6 +22,10 @@
 
 namespace ccons {
 
+//
+// RemoteConsole
+//
+
 class RemoteConsole : public IConsole {
 
 public:
@@ -46,7 +50,9 @@ private:
 
 };
 
-
+//
+// SerializedOutputConsole
+//
 
 class SerializedOutputConsole : public IConsole {
 

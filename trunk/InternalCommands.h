@@ -15,10 +15,15 @@
 
 namespace ccons {
 
+// Handle an internal command if it was specified. If handled, returns
+// true; otherwise the input did not correspond to an internal command.
 bool HandleInternalCommand(const char *input, bool debugMode,
                            std::ostream& out, std::ostream& err);
 
+// Prints ccons version information to the specified ostream.
 void PrintVersionInformation(std::ostream& out);
+
+// Prints ccons version information to std::out.
 void PrintVersionInformation();
 
 } // namespace ccons
