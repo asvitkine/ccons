@@ -26,6 +26,8 @@ namespace clang {
 
 namespace ccons {
 
+// StmtFinder will attempt to find a clang Stmt at the specified
+// offset in the source (pos).
 class StmtFinder : public clang::StmtVisitor<StmtFinder> {
 
 public:
@@ -45,6 +47,7 @@ private:
 
 };
 
+// StmtSplitter will extract clang Stmts from the specified source.
 class StmtSplitter : public clang::StmtVisitor<StmtSplitter> {
 
 public:
@@ -67,19 +70,21 @@ private:
 
 };
 
+// ASTConsumer that visits function body Stmts and passes
+// those to a specific StmtVisitor.
 template <typename T>
 class FunctionBodyConsumer : public clang::ASTConsumer {
 
 private:
 
-	T *_SF;
+	T *_SV;
 	clang::ASTContext *_ast;
 	std::string _funcName;
 
 public:
 
-	explicit FunctionBodyConsumer<T>(T *SF, clang::ASTContext *ast, const char *funcName)
-		: _SF(SF), _ast(ast), _funcName(funcName) {}
+	FunctionBodyConsumer<T>(T *SV, clang::ASTContext *ast, const char *funcName)
+		: _SV(SV), _ast(ast), _funcName(funcName) {}
 	~FunctionBodyConsumer<T>() {}
 
 	void HandleTopLevelDecl(clang::DeclGroupRef D) {
@@ -87,7 +92,7 @@ public:
 			if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
 				if (FD->getNameAsCString() == _funcName) {
 					if (clang::Stmt *S = FD->getBody(*_ast)) {
-						_SF->VisitChildren(S);
+						_SV->VisitChildren(S);
 					}
 				}
 			}
