@@ -24,6 +24,9 @@ class LineReader {
 public:
 
 	virtual ~LineReader() {}
+
+	// Reads a line by presenting the specified prompt and pre-pending
+	// the specified input string.
 	virtual const char * readLine(const char *prompt, const char *input) = 0;
 
 };
