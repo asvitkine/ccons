@@ -17,6 +17,9 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 
+// Returns the next auto-completion character, or '\0' if there isn't one.
+// A character will only be returned if can complete the prefix and there
+// are no other such matches.
 static char next_prefix_char(DIR *d, const char *prefix, unsigned prefix_length)
 {
 	struct dirent *entry;
@@ -24,18 +27,12 @@ static char next_prefix_char(DIR *d, const char *prefix, unsigned prefix_length)
 	rewinddir(d);
 	for (entry = readdir(d); entry; entry = readdir(d)) {
 		if (!strncmp(entry->d_name, prefix, prefix_length)) {
-			nextch = entry->d_name[prefix_length];
-			break;
-		}
-	}
-	if (nextch != '\0') {
-		rewinddir(d);
-		for (entry = readdir(d); entry; entry = readdir(d)) {
-			if (!strncmp(entry->d_name, prefix, prefix_length)) {
-				if (entry->d_name[prefix_length] != nextch) {
-					nextch = '\0';
-					break;
-				}
+			if (nextch == '\0') {
+				nextch = entry->d_name[prefix_length];
+			} else if (nextch != entry->d_name[prefix_length]) {
+				// Multiple matches => no completion.
+				nextch = '\0';
+				break;
 			}
 		}
 	}
@@ -48,6 +45,10 @@ unsigned complete(const char *path, char *suggest, unsigned suggest_length)
 	char pathcopy[MAXPATHLEN];
 
 	*suggest = 0;
+
+	if (path[strlen(path) - 1] == '/')
+		return 0;
+
 	strncpy(pathcopy, path, sizeof(pathcopy));
 	pathcopy[sizeof(pathcopy) - 1] = '\0';
 
@@ -67,7 +68,7 @@ unsigned complete(const char *path, char *suggest, unsigned suggest_length)
 					while (prefix_len < sizeof(prefix)) {
 						prefix[prefix_len] = next_prefix_char(dd, prefix, prefix_len);
 						if (prefix[prefix_len] == '\0') {
-							if (prefix_len > 0 && prefix[prefix_len] != '/') {
+							if (prefix_len > 0 && prefix[prefix_len - 1] != '/') {
 								struct stat f;
 								char newpath[MAXPATHLEN];
 								snprintf(newpath, sizeof(newpath), "%s%s", path, prefix + len);
