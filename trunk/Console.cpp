@@ -251,7 +251,8 @@ void Console::printGV(const llvm::Function *F,
                       const llvm::GenericValue& GV,
                       const clang::QualType& QT)
 {
-	const char *type = QT.getAsString().c_str();
+	string typeString = QT.getAsString();
+	const char *type = typeString.c_str();
 	const llvm::FunctionType *FTy = F->getFunctionType();
 	const llvm::Type *RetTy = FTy->getReturnType();
 	switch (RetTy->getTypeID()) {
@@ -265,7 +266,7 @@ void Console::printGV(const llvm::Function *F,
 			oprintf(_out, "=> (%s) %f\n", type, GV.FloatVal);
 			return;
 		case llvm::Type::DoubleTyID:
-			oprintf(_out, "=> (%s) %lf\n", type, GV.DoubleVal);
+			oprintf(_out, "=> (%s) %f\n", type, GV.DoubleVal);
 			return;
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
