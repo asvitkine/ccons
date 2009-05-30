@@ -22,7 +22,7 @@ namespace ccons {
 // and variable name. Works for non-trivial types like function pointers.
 string genVarDecl(const clang::QualType& type, const string& vName) {
 	string str = vName;
-	type.getUnqualifiedType().getAsStringInternal(str);
+	type.getUnqualifiedType().getAsStringInternal(str, clang::PrintingPolicy());
 	return str;
 }
 
@@ -67,7 +67,7 @@ std::string getFunctionDeclAsString(const clang::FunctionDecl *FD)
 {
 	const clang::FunctionType *FT = FD->getType()->getAsFunctionType();
 	string str = FD->getNameAsString();
-	FT->getAsStringInternal(str);
+	FT->getAsStringInternal(str, clang::PrintingPolicy());
 	str += ";";
 	return str;
 }

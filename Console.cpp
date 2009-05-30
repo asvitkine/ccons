@@ -282,7 +282,7 @@ void Console::printGV(const llvm::Function *F,
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			} else if (QT->isFunctionType()) {
 				string str = "*";
-				QT.getUnqualifiedType().getAsStringInternal(str);
+				QT.getUnqualifiedType().getAsStringInternal(str, clang::PrintingPolicy());
 				type = str.c_str();
 				oprintf(_out, "=> (%s) %p\n", type, p);
 			} else {
