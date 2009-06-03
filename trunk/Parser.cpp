@@ -137,7 +137,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		ProxyDiagnosticClient pdc(NULL); // do not output diagnostics
 		clang::Diagnostic diag(&pdc);
 		// Setting this ensures "foo();" is not a valid top-level declaration.
-		diag.setDiagnosticMapping(clang::diag::warn_missing_type_specifier,
+		diag.setDiagnosticMapping(clang::diag::ext_missing_type_specifier,
 	                            clang::diag::MAP_ERROR);
 		diag.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
