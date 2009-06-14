@@ -58,8 +58,12 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_pp->setPPCallbacks(callbacks);
 	clang::PreprocessorInitOptions ppOptions;
 	InitializePreprocessor(*_pp, ppOptions);
-	_ast.reset(new clang::ASTContext(options, *_sm, target,
-		_pp->getIdentifierTable(), _pp->getSelectorTable()));
+	_ast.reset(new clang::ASTContext(options,
+	                                 *_sm,
+	                                 target,
+	                                 _pp->getIdentifierTable(),
+	                                 _pp->getSelectorTable(),
+	                                 _pp->getBuiltinInfo()));
 }
 
 clang::ASTContext * ParseOperation::getASTContext() const
