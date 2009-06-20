@@ -26,6 +26,7 @@
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/ExecutionEngine/JIT.h>
 
 #include <clang/AST/AST.h>
 #include <clang/Basic/LangOptions.h>
@@ -555,6 +556,7 @@ bool Console::compileLinkAndRun(const string& src,
 			module = _linker->getModule();
 			if (!_engine)
 				_engine.reset(llvm::ExecutionEngine::create(module));
+			assert(_engine && "Could not create ExecutionEngine!");
 			llvm::Function *F = module->getFunction(fName.c_str());
 			assert(F && "Function was not found!");
 			std::vector<llvm::GenericValue> params;
