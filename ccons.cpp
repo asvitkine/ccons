@@ -15,6 +15,7 @@
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/System/Signals.h>
+#include <llvm/Target/TargetSelect.h>
 
 #include "Console.h"
 #include "EditLineReader.h"
@@ -74,6 +75,8 @@ int main(const int argc, char **argv)
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
 		llvm::sys::PrintStackTraceOnErrorSignal();
 	}
+
+	llvm::InitializeNativeTarget();
 
 	llvm::OwningPtr<IConsole> console(createConsole());
 	llvm::OwningPtr<LineReader> reader(createReader());
