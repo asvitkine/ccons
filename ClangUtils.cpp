@@ -26,6 +26,9 @@ SrcRange getStmtRange(const clang::Stmt *S,
 {
 	clang::SourceLocation SLoc = sm.getInstantiationLoc(S->getLocStart());
 	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
+	// This is necessary to get the correct range of function-like macros.
+	if (SLoc == ELoc && S->getLocEnd().isMacroID())
+		ELoc = sm.getInstantiationRange(S->getLocEnd()).second;
 	unsigned start = sm.getFileOffset(SLoc);
 	unsigned end   = sm.getFileOffset(ELoc);
 	end += clang::Lexer::MeasureTokenLength(ELoc, sm, options);
