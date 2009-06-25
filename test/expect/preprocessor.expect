@@ -35,3 +35,7 @@ send "} while (0)\n"
 send "#include <stdio.h>"
 check "P(\"Hi\");" "Hi"
 
+send "#define WORLD_FRACTIONAL_BITS 9"
+send "#define WORLD_TO_INTEGER(d) ((d)>>WORLD_FRACTIONAL_BITS)"
+send "int x = WORLD_TO_INTEGER(19330);"
+check "x;" "=> (int) 37"
