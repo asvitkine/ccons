@@ -173,8 +173,7 @@ int Console::splitInput(const string& source,
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
 	clang::SourceManager *sm = parseOp->getSourceManager();
 	StmtSplitter splitter(src, *sm, _options, &stmts);
-	clang::ASTContext *ast = parseOp->getASTContext();
-	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, ast, "__ccons_internal");
+	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
 	if (_debugMode)
 		oprintf(_err, "Parsing in splitInput()...\n");
 	_parser->parse(src, parseOp, &consumer);
@@ -211,8 +210,7 @@ clang::Stmt * Console::locateStmt(const std::string& line,
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
 	clang::SourceManager& sm = *parseOp->getSourceManager();
 	StmtFinder finder(pos, sm);
-	clang::ASTContext *ast = parseOp->getASTContext();
-	FunctionBodyConsumer<StmtFinder> consumer(&finder, ast, "__ccons_internal");
+	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
 	if (_debugMode)
 		oprintf(_err, "Parsing in locateStmt()...\n");
 	_parser->parse(*src, parseOp, &consumer);
@@ -283,7 +281,8 @@ void Console::printGV(const llvm::Function *F,
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			} else if (QT->isFunctionType()) {
 				string str = "*";
-				QT.getUnqualifiedType().getAsStringInternal(str, clang::PrintingPolicy());
+				QT.getUnqualifiedType().getAsStringInternal(str,
+				                        clang::PrintingPolicy(_options));
 				type = str.c_str();
 				oprintf(_out, "=> (%s) %p\n", type, p);
 			} else {
@@ -325,7 +324,8 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 				 E = DS->decl_end(); D != E; ++D) {
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
-				string decl = genVarDecl(VD->getType(), VD->getNameAsCString());
+				string decl = genVarDecl(clang::PrintingPolicy(_options),
+				                         VD->getType(), VD->getNameAsCString());
 				if (const clang::Expr *I = VD->getInit()) {
 					SrcRange range = getStmtRange(I, *sm, _options);
 					if (I->isConstantInitializer(*context)) {
@@ -419,7 +419,8 @@ string Console::genAppendix(const char *source,
 		*fName = "__ccons_anon" + to_string(_funcNo++);
 		int bodyOffset;
 		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
-		appendix += genFunction(wasExpr ? &QT : NULL, context, *fName, funcBody, bodyOffset);
+		appendix += genFunction(clang::PrintingPolicy(_options), wasExpr ? &QT : NULL,
+		                        context, *fName, funcBody, bodyOffset);
 		_dp->setOffset(bodyOffset + strlen(source));
 		if (_debugMode)
 			oprintf(_err, "Generating function %s()...\n", fName->c_str());
@@ -468,7 +469,9 @@ void Console::process(const char *line)
 				oprintf(_err, "Recording %d function declaration%s...\n",
 				        fnDecls.size(), fnDecls.size() == 1 ? "" : "s");
 			for (unsigned i = 0; i < fnDecls.size(); ++i)
-				linesToAppend.push_back(CodeLine(getFunctionDeclAsString(fnDecls[i]), DeclLine));
+				linesToAppend.push_back(CodeLine(
+					getFunctionDeclAsString(clang::PrintingPolicy(_options), fnDecls[i]),
+					DeclLine));
 		} else if (appendix[0] == '#') {
 			linesToAppend.push_back(CodeLine(appendix, PrprLine));
 		}
@@ -527,7 +530,7 @@ bool Console::compileLinkAndRun(const string& src,
 
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CompileOptions compileOptions;
-	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions));
+	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions, _context));
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
 	_macros = new MacroDetector(_options);
@@ -543,7 +546,7 @@ bool Console::compileLinkAndRun(const string& src,
 	llvm::Module *module = codegen->ReleaseModule();
 	if (module) {
 		if (!_linker)
-			_linker.reset(new llvm::Linker("ccons", "ccons"));
+			_linker.reset(new llvm::Linker("ccons", "ccons", _context));
 		string error;
 		_linker->LinkInModule(module, &error);
 		if (!error.empty()) {
