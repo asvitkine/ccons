@@ -78,20 +78,19 @@ class FunctionBodyConsumer : public clang::ASTConsumer {
 private:
 
 	T *_SV;
-	clang::ASTContext *_ast;
 	std::string _funcName;
 
 public:
 
-	FunctionBodyConsumer<T>(T *SV, clang::ASTContext *ast, const char *funcName)
-		: _SV(SV), _ast(ast), _funcName(funcName) {}
+	FunctionBodyConsumer<T>(T *SV, const char *funcName)
+		: _SV(SV), _funcName(funcName) {}
 	~FunctionBodyConsumer<T>() {}
 
 	void HandleTopLevelDecl(clang::DeclGroupRef D) {
 		for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
 			if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
 				if (FD->getNameAsCString() == _funcName) {
-					if (clang::Stmt *S = FD->getBody(*_ast)) {
+					if (clang::Stmt *S = FD->getBody()) {
 						_SV->VisitChildren(S);
 					}
 				}

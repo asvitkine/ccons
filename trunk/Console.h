@@ -19,6 +19,7 @@
 #include <vector>
 #include <algorithm>
 
+#include <llvm/LLVMContext.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/ADT/OwningPtr.h>
 
@@ -128,6 +129,7 @@ private:
 	mutable llvm::raw_os_ostream _raw_err;
 	clang::LangOptions _options;
 	llvm::OwningPtr<Parser> _parser;
+	llvm::LLVMContext _context;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<DiagnosticsProvider> _dp;
