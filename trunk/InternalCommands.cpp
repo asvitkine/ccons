@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include <llvm/System/DynamicLibrary.h>
+#include <llvm/System/Path.h>
 
 namespace ccons {
 
