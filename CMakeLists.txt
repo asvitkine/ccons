@@ -11,6 +11,7 @@ exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs engine backend linker bitread
 set(LLVM_LIBS "-ldl ${LLVM_LIBS1}")
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags OUTPUT_VARIABLE LLVM_LDFLAGS)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
+exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --host-target | cut -d"-" -f1 OUTPUT_VARIABLE LLVM_HOST_ARCH)
 set(CLANG_LIBS "-lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic")
 
 Project(ccons)
@@ -23,6 +24,9 @@ include_directories(../clang/include/)
 
 set_target_properties(ccons PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -ldl")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch ${LLVM_HOST_ARCH}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch ${LLVM_HOST_ARCH}")
 
 set(LIBS ${LIBS} ${CLANG_LIBS})
 set(LIBS ${LIBS} ${LLVM_LIBS})
