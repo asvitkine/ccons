@@ -25,8 +25,8 @@ include_directories(../clang/include/)
 set_target_properties(ccons PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -ldl")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch ${LLVM_HOST_ARCH}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch ${LLVM_HOST_ARCH}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${LLVM_HOST_ARCH}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${LLVM_HOST_ARCH}")
 
 set(LIBS ${LIBS} ${CLANG_LIBS})
 set(LIBS ${LIBS} ${LLVM_LIBS})
