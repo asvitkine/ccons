@@ -12,7 +12,7 @@ set(LLVM_LIBS "-ldl ${LLVM_LIBS1}")
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags OUTPUT_VARIABLE LLVM_LDFLAGS)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --host-target | cut -d"-" -f1 OUTPUT_VARIABLE LLVM_HOST_ARCH)
-set(CLANG_LIBS "-lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic")
+set(CLANG_LIBS "-lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic -lclangAnalysis")
 
 Project(ccons)
 
