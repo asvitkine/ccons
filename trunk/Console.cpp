@@ -270,7 +270,7 @@ void Console::printGV(const llvm::Function *F,
 		case llvm::Type::PointerTyID: {
 			void *p = GVTOP(GV);
 			bool couldBeString = false;
-			if (const clang::PointerType *PT = QT->getAsPointerType()) {
+			if (const clang::PointerType *PT = QT->getAs<clang::PointerType>()) {
 				couldBeString = PT->getPointeeType()->isCharType();
 			} else if (QT->isArrayType()) {
 				if (const clang::ArrayType *AT = dyn_cast<clang::ArrayType>(QT)) {
