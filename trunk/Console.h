@@ -20,7 +20,7 @@
 #include <algorithm>
 
 #include <llvm/LLVMContext.h>
-#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/ADT/OwningPtr.h>
 
 #include <clang/Basic/LangOptions.h>
