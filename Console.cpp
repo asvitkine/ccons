@@ -238,7 +238,7 @@ bool Console::shouldPrintCString(const char *p)
 		if (result == 1) {
 			if (*p == '\0')
 				return true;
-			if (!isgraph(*p))
+			if (!isgraph(*p) && !isspace(*p))
 				return false;
 			p++;
 		}
