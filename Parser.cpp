@@ -164,6 +164,8 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 							while (!sm->isFromMainFile(Loc)) {
 								const clang::SrcMgr::SLocEntry& Entry =
 									sm->getSLocEntry(sm->getFileID(sm->getSpellingLoc(Loc)));
+								if (!Entry.isFile())
+									break;
 								Loc = Entry.getFile().getIncludeLoc();
 							}
 							unsigned offset = sm->getFileOffset(Loc);
