@@ -23,7 +23,7 @@ send "25\n"
 
 check "X;" "=> (int) 25"
 
-check "#include <xyz.abc>" "Note: Last line ignored due to errors."
+check "#include <xyz.abc>" "Note: Last input ignored due to errors."
 
 send "#define P(x) ((x)+1)\n"
 check "P(5);" "=> (int) 6"
