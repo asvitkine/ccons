@@ -28,7 +28,7 @@ send "}\n"
 
 check "Lucas(6);" "=> (int) 18"
 
-send "int a() {return 1;} int b() {return 2;}"
+send "int a() {return 1;} int b() {return 2;}\n"
 check "a();" "=> (int) 1"
 check "b();" "=> (int) 2"
 
