@@ -33,3 +33,4 @@ set(LIBS ${LIBS} ${LLVM_LIBS})
 set(LIBS ${LIBS} -ledit -lcurses)
 target_link_libraries(ccons ${LIBS})
 
+install(PROGRAMS ccons DESTINATION bin)
