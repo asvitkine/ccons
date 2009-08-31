@@ -486,8 +486,11 @@ void Console::process(const char *line)
 			for (unsigned i = 0; i < linesToAppend.size(); ++i)
 				_lines.push_back(linesToAppend[i]);
 			std::vector<string>& macros = _macros->getMacrosVector();
-			for (unsigned i = 0; i < macros.size(); ++i)
+			for (unsigned i = _prevMacros.size(); i < macros.size(); ++i)
 				_lines.push_back(CodeLine(macros[i], PrprLine));
+			_prevMacros.swap(macros);
+			if (_debugMode)
+				oprintf(_err, "Added %d macros.\n", macros.size());
 		}
 	} else {
 		if (_debugMode)
@@ -513,8 +516,11 @@ void Console::process(const char *line)
 				for (unsigned i = 0; i < linesToAppend.size(); ++i)
 					_lines.push_back(linesToAppend[i]);
 				std::vector<string>& macros = _macros->getMacrosVector();
-				for (unsigned i = 0; i < macros.size(); ++i)
+				for (unsigned i = _prevMacros.size(); i < macros.size(); ++i)
 					_lines.push_back(CodeLine(macros[i], PrprLine));
+				_prevMacros.swap(macros);
+				if (_debugMode)
+					oprintf(_err, "Added %d macros.\n", macros.size());
 			}
 		}
 	}

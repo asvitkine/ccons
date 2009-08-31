@@ -134,6 +134,7 @@ private:
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<DiagnosticsProvider> _dp;
 	MacroDetector *_macros;
+	std::vector<std::string> _prevMacros;
 	std::vector<CodeLine> _lines;
 	std::string _buffer;
 	std::string _prompt;
