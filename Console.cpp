@@ -481,7 +481,7 @@ void Console::process(const char *line)
 
 		src = genSource(appendix);
 		string empty;
-		clang::QualType retType(0, 0);
+		clang::QualType retType((clang::Type *) NULL, 0);
 		if (compileLinkAndRun(src, empty, retType)) {
 			for (unsigned i = 0; i < linesToAppend.size(); ++i)
 				_lines.push_back(linesToAppend[i]);
@@ -506,7 +506,7 @@ void Console::process(const char *line)
 
 		for (unsigned i = 0; i < split.size(); i++) {
 			string fName;
-			clang::QualType retType(0, 0);
+			clang::QualType retType((clang::Type *) NULL, 0);
 			appendix = genAppendix(src.c_str(), split[i].c_str(), &fName, retType, &linesToAppend, &hadErrors);
 			if (hadErrors)
 				return;

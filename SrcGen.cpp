@@ -69,7 +69,7 @@ string genFunction(const clang::PrintingPolicy& PP,
 std::string getFunctionDeclAsString(const clang::PrintingPolicy& PP,
                                     const clang::FunctionDecl *FD)
 {
-	const clang::FunctionType *FT = FD->getType()->getAsFunctionType();
+	const clang::FunctionType *FT = FD->getType()->getAs<clang::FunctionType>();
 	string str = FD->getNameAsString();
 	FT->getAsStringInternal(str, PP);
 	str += ";";
