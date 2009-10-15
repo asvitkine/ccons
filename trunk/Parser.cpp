@@ -50,9 +50,10 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_fm(new clang::FileManager),
 	_hs(new clang::HeaderSearch(*_fm))
 {
+	llvm::Triple triple(LLVM_HOSTTRIPLE);
 	clang::InitHeaderSearch ihs(*_hs);
 	ihs.AddDefaultEnvVarPaths(options);
-	ihs.AddDefaultSystemIncludePaths(options);
+	ihs.AddDefaultSystemIncludePaths(options, triple);
 	ihs.Realize();
 	_pp.reset(new clang::Preprocessor(*diag, options, target, *_sm, *_hs));
 	_pp->setPPCallbacks(callbacks);
