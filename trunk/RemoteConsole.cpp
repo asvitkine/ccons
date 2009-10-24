@@ -17,8 +17,6 @@
 #include <sstream>
 #include <signal.h>
 
-#include <llvm/ADT/StringExtras.h>
-
 #include "popen2.h"
 
 using std::string;
