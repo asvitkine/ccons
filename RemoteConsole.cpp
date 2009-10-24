@@ -60,6 +60,61 @@ private:
 
 };
 
+
+/// UnescapeString - Modify the argument string, turning two character sequences
+/// @verbatim
+/// like '\\' 'n' into '\n'.  This handles: \e \a \b \f \n \r \t \v \' \ and
+/// \num (where num is a 1-3 byte octal value).
+/// @endverbatim
+void UnescapeString(std::string &Str) {
+  for (unsigned i = 0; i != Str.size(); ++i) {
+    if (Str[i] == '\\' && i != Str.size()-1) {
+      switch (Str[i+1]) {
+      default: continue;  // Don't execute the code after the switch.
+      case 'a': Str[i] = '\a'; break;
+      case 'b': Str[i] = '\b'; break;
+      case 'e': Str[i] = 27; break;
+      case 'f': Str[i] = '\f'; break;
+      case 'n': Str[i] = '\n'; break;
+      case 'r': Str[i] = '\r'; break;
+      case 't': Str[i] = '\t'; break;
+      case 'v': Str[i] = '\v'; break;
+      case '"': Str[i] = '\"'; break;
+      case '\'': Str[i] = '\''; break;
+      case '\\': Str[i] = '\\'; break;
+      }
+      // Nuke the second character.
+      Str.erase(Str.begin()+i+1);
+    }
+  }
+}
+
+/// EscapeString - Modify the argument string, turning '\\' and anything that
+/// doesn't satisfy std::isprint into an escape sequence.
+void EscapeString(std::string &Str) {
+  for (unsigned i = 0; i != Str.size(); ++i) {
+    if (Str[i] == '\\') {
+      ++i;
+      Str.insert(Str.begin()+i, '\\');
+    } else if (Str[i] == '\t') {
+      Str[i++] = '\\';
+      Str.insert(Str.begin()+i, 't');
+    } else if (Str[i] == '"') {
+      Str.insert(Str.begin()+i++, '\\');
+    } else if (Str[i] == '\n') {
+      Str[i++] = '\\';
+      Str.insert(Str.begin()+i, 'n');
+    } else if (!std::isprint(Str[i])) {
+      // Always expand to a 3-digit octal escape.
+      unsigned Char = Str[i];
+      Str[i++] = '\\';
+      Str.insert(Str.begin()+i++, '0'+((Char/64) & 7));
+      Str.insert(Str.begin()+i++, '0'+((Char/8)  & 7));
+      Str.insert(Str.begin()+i  , '0'+( Char     & 7));
+    }
+  }
+}
+
 } // anon namespace
 
 
@@ -113,7 +168,7 @@ bool SerializedConsoleOutput::readEscapedString(FILE *stream, std::string *str)
 	if (fgets(buf, sizeof(buf), stream)) {
 		buf[strlen(buf) - 1] = '\0';
 		*str = buf;
-		llvm::UnescapeString(*str);
+		UnescapeString(*str);
 		return true;
 	}
 	return false;
@@ -132,16 +187,16 @@ void SerializedConsoleOutput::writeToString(std::string *str) const
 	std::stringstream ss;
 	string temp;
 	temp = _output;
-	llvm::EscapeString(temp);
+	EscapeString(temp);
 	ss << temp << "\n";
 	temp = _error;
-	llvm::EscapeString(temp);
+	EscapeString(temp);
 	ss << temp << "\n";
 	temp = _prompt;
-	llvm::EscapeString(temp);
+	EscapeString(temp);
 	ss << temp << "\n";
 	temp = _input;
-	llvm::EscapeString(temp);
+	EscapeString(temp);
 	ss << temp << "\n";
 	*str = ss.str();
 }
