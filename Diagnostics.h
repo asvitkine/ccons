@@ -17,6 +17,7 @@
 
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/Diagnostic.h>
+#include <clang/Frontend/DiagnosticOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 
 namespace ccons {
@@ -42,6 +43,7 @@ public:
 private:
 
 	unsigned _offs;
+	clang::DiagnosticOptions _dop;
 	clang::TextDiagnosticPrinter _tdp;
 	clang::Diagnostic _diag;
 	std::set<std::pair<clang::diag::kind, unsigned> > _memory;

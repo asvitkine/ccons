@@ -21,10 +21,12 @@ namespace ccons {
 
 DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out,
                                          const clang::LangOptions& opts)
-	: _tdp(out, false, true, false, true, false)
+	: _tdp(out, _dop)
 	, _diag(this)
 {
-	_tdp.setLangOptions(&opts);
+	_dop.ShowColumn = 0;
+	_dop.ShowSourceRanges = 1;
+	_tdp.BeginSourceFile(opts);
 	_diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
 	                           clang::diag::MAP_ERROR);
 	_diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
