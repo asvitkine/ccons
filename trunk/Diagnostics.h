@@ -36,12 +36,15 @@ public:
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
 	                      const clang::DiagnosticInfo &Info);
 
+	void BeginSourceFile(const clang::Preprocessor *pp);
+
 	void setOffset(unsigned offset);
 
 	clang::Diagnostic * getDiagnostic();
 
 private:
 
+	const clang::LangOptions& _opts;
 	unsigned _offs;
 	clang::DiagnosticOptions _dop;
 	clang::TextDiagnosticPrinter _tdp;

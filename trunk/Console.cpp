@@ -32,7 +32,7 @@
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Basic/TargetInfo.h>
-#include <clang/Frontend/CompileOptions.h>
+#include <clang/CodeGen/CodeGenOptions.h>
 #include <clang/CodeGen/ModuleBuilder.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Lex/MacroInfo.h>
@@ -171,6 +171,7 @@ int Console::splitInput(const string& source,
 	_dp->setOffset(pos);
 	std::vector<clang::Stmt*> stmts;
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
+	_dp->BeginSourceFile(parseOp->getPreprocessor());
 	clang::SourceManager *sm = parseOp->getSourceManager();
 	StmtSplitter splitter(src, *sm, _options, &stmts);
 	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
@@ -208,6 +209,7 @@ clang::Stmt * Console::locateStmt(const std::string& line,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
+	_dp->BeginSourceFile(parseOp->getPreprocessor());
 	clang::SourceManager& sm = *parseOp->getSourceManager();
 	StmtFinder finder(pos, sm);
 	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
@@ -535,13 +537,14 @@ bool Console::compileLinkAndRun(const string& src,
 		oprintf(_err, "Running code-generator.\n");
 
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
-	clang::CompileOptions compileOptions;
-	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", compileOptions, _context));
+	clang::CodeGenOptions codeGenOptions;
+	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", codeGenOptions, _context));
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
 	_macros = new MacroDetector(_options);
 	ParseOperation *parseOp =
 	  _parser->createParseOperation(_dp->getDiagnostic(), _macros);
+	_dp->BeginSourceFile(parseOp->getPreprocessor());
 	_macros->setSourceManager(parseOp->getSourceManager());
 	_parser->parse(src, parseOp, codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {
