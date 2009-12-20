@@ -19,8 +19,10 @@
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Basic/TargetInfo.h>
-#include <clang/Frontend/InitHeaderSearch.h>
-#include <clang/Frontend/InitPreprocessor.h>
+#include <clang/Basic/TargetOptions.h>
+#include <clang/Frontend/HeaderSearchOptions.h>
+#include <clang/Frontend/PreprocessorOptions.h>
+#include <clang/Frontend/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/LexDiagnostic.h>
 #include <clang/Lex/Preprocessor.h>
@@ -43,7 +45,6 @@ namespace ccons {
 //
 
 ParseOperation::ParseOperation(const clang::LangOptions& options,
-                               clang::TargetInfo& target,
                                clang::Diagnostic *diag,
                                clang::PPCallbacks *callbacks) :
 	_sm(new clang::SourceManager),
@@ -51,17 +52,21 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_hs(new clang::HeaderSearch(*_fm))
 {
 	llvm::Triple triple(LLVM_HOSTTRIPLE);
-	clang::InitHeaderSearch ihs(*_hs);
-	ihs.AddDefaultEnvVarPaths(options);
-	ihs.AddDefaultSystemIncludePaths(options, triple);
-	ihs.Realize();
-	_pp.reset(new clang::Preprocessor(*diag, options, target, *_sm, *_hs));
+	clang::TargetOptions targetOptions;
+  targetOptions.ABI = "";
+  targetOptions.CPU = "";
+  targetOptions.Features.clear();
+  targetOptions.Triple = LLVM_HOSTTRIPLE;
+	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
+	clang::HeaderSearchOptions hsOptions;
+	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
+	_pp.reset(new clang::Preprocessor(*diag, options, *_target, *_sm, *_hs));
 	_pp->setPPCallbacks(callbacks);
-	clang::PreprocessorInitOptions ppOptions;
-	InitializePreprocessor(*_pp, ppOptions);
+	clang::PreprocessorOptions ppOptions;
+	InitializePreprocessor(*_pp, ppOptions, hsOptions);
 	_ast.reset(new clang::ASTContext(options,
 	                                 *_sm,
-	                                 target,
+	                                 *_target,
 	                                 _pp->getIdentifierTable(),
 	                                 _pp->getSelectorTable(),
 	                                 _pp->getBuiltinInfo()));
@@ -82,14 +87,20 @@ clang::SourceManager * ParseOperation::getSourceManager() const
 	return _sm.get();
 }
 
+clang::TargetInfo * ParseOperation::getTargetInfo() const
+{
+	return _target.get();
+}
+
 
 //
 // Parser
 //
 
+
+
 Parser::Parser(const clang::LangOptions& options) :
-	_options(options),
-	_target(clang::TargetInfo::CreateTargetInfo(LLVM_HOSTTRIPLE))
+	_options(options)
 {
 }
 
@@ -126,13 +137,14 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	ProxyDiagnosticClient pdc(NULL);
 	clang::Diagnostic diag(&pdc);
 	llvm::OwningPtr<ParseOperation>
-		parseOp(new ParseOperation(_options, *_target, &diag));
-	createMemoryBuffer(buffer, "", parseOp->getSourceManager());
+		parseOp(new ParseOperation(_options, &diag));
+	llvm::MemoryBuffer *memBuf =
+		createMemoryBuffer(buffer, "", parseOp->getSourceManager());
 
 	clang::Token LastTok;
 	bool TokWasDo = false;
 	int stackSize =
-		analyzeTokens(*parseOp->getPreprocessor(), LastTok, indentLevel, TokWasDo);
+		analyzeTokens(*parseOp->getPreprocessor(), memBuf, LastTok, indentLevel, TokWasDo);
 	if (stackSize < 0)
 		return TopLevel;
 
@@ -200,14 +212,15 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 }
 
 int Parser::analyzeTokens(clang::Preprocessor& PP,
+                          const llvm::MemoryBuffer *MemBuf,
                           clang::Token& LastTok,
-                          int& indentLevel,
+                          int& IndentLevel,
                           bool& TokWasDo)
 {
 	int result;
 	std::stack<std::pair<clang::Token, clang::Token> > S; // Tok, PrevTok
 
-	indentLevel = 0;
+	IndentLevel = 0;
 	PP.EnterMainSourceFile();
 
 	clang::Token Tok;
@@ -219,7 +232,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 			S.push(std::make_pair(Tok, LastTok)); // (
 		} else if (Tok.is(clang::tok::l_brace)) {
 			S.push(std::make_pair(Tok, LastTok)); // {
-			indentLevel++;
+			IndentLevel++;
 		} else if (Tok.is(clang::tok::r_square)) {
 			if (S.empty() || S.top().first.isNot(clang::tok::l_square)) {
 				std::cout << "Unmatched [\n";
@@ -241,7 +254,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 			}
 			TokWasDo = S.top().second.is(clang::tok::kw_do);
 			S.pop();
-			indentLevel--;
+			IndentLevel--;
 		}
 		LastTok = Tok;
 		PP.Lex(Tok);
@@ -266,6 +279,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 	// Also try to match preprocessor conditionals...
 	if (result == 0) {
 		clang::Lexer Lexer(PP.getSourceManager().getMainFileID(),
+		                   MemBuf,
 		                   PP.getSourceManager(),
 		                   PP.getLangOptions());
 		Lexer.LexFromRawLexer(Tok);
@@ -299,7 +313,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 ParseOperation * Parser::createParseOperation(clang::Diagnostic *diag,
                                               clang::PPCallbacks *callbacks)
 {
-	return new ParseOperation(_options, *_target, diag, callbacks);
+	return new ParseOperation(_options, diag, callbacks);
 }
 
 void Parser::parse(const string& src,

@@ -24,7 +24,7 @@ string genVarDecl(const clang::PrintingPolicy& PP,
                   const clang::QualType& type,
                   const string& vName) {
 	string str = vName;
-	type.getUnqualifiedType().getAsStringInternal(str, PP);
+	type.getAsStringInternal(str, PP);
 	return str;
 }
 
@@ -69,9 +69,8 @@ string genFunction(const clang::PrintingPolicy& PP,
 std::string getFunctionDeclAsString(const clang::PrintingPolicy& PP,
                                     const clang::FunctionDecl *FD)
 {
-	const clang::FunctionType *FT = FD->getType()->getAs<clang::FunctionType>();
 	string str = FD->getNameAsString();
-	FT->getAsStringInternal(str, PP);
+	FD->getType().getAsStringInternal(str, PP);
 	str += ";";
 	return str;
 }

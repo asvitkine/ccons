@@ -45,13 +45,13 @@ class ParseOperation {
 public:
 	
 	ParseOperation(const clang::LangOptions& options,
-	               clang::TargetInfo& target,
 	               clang::Diagnostic *diag,
 	               clang::PPCallbacks *callbacks = 0);
 
   clang::ASTContext * getASTContext() const;
 	clang::Preprocessor * getPreprocessor() const;
 	clang::SourceManager * getSourceManager() const;
+	clang::TargetInfo * ParseOperation::getTargetInfo() const;
 
 private:
 
@@ -60,6 +60,7 @@ private:
 	llvm::OwningPtr<clang::HeaderSearch> _hs;
 	llvm::OwningPtr<clang::Preprocessor> _pp;
 	llvm::OwningPtr<clang::ASTContext> _ast;
+	llvm::OwningPtr<clang::TargetInfo> _target;
 
 };
 
@@ -111,12 +112,12 @@ public:
 private:
 
 	const clang::LangOptions& _options;
-	llvm::OwningPtr<clang::TargetInfo> _target;
 	std::vector<ParseOperation*> _ops;
 
 	int analyzeTokens(clang::Preprocessor& PP,
+	                  const llvm::MemoryBuffer *MemBuf,
 	                  clang::Token& LastTok,
-	                  int& indentLevel,
+	                  int& IndentLevel,
 	                  bool& TokWasDo);
 
 	static llvm::MemoryBuffer * createMemoryBuffer(const std::string& src,
