@@ -20,6 +20,7 @@
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/TargetOptions.h>
+#include <clang/Frontend/FrontendOptions.h>
 #include <clang/Frontend/HeaderSearchOptions.h>
 #include <clang/Frontend/PreprocessorOptions.h>
 #include <clang/Frontend/Utils.h>
@@ -53,17 +54,18 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 {
 	llvm::Triple triple(LLVM_HOSTTRIPLE);
 	clang::TargetOptions targetOptions;
-  targetOptions.ABI = "";
-  targetOptions.CPU = "";
-  targetOptions.Features.clear();
-  targetOptions.Triple = LLVM_HOSTTRIPLE;
+	targetOptions.ABI = "";
+	targetOptions.CPU = "";
+	targetOptions.Features.clear();
+	targetOptions.Triple = LLVM_HOSTTRIPLE;
 	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
 	clang::HeaderSearchOptions hsOptions;
 	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
 	_pp.reset(new clang::Preprocessor(*diag, options, *_target, *_sm, *_hs));
 	_pp->setPPCallbacks(callbacks);
 	clang::PreprocessorOptions ppOptions;
-	InitializePreprocessor(*_pp, ppOptions, hsOptions);
+	clang::FrontendOptions frontendOptions;
+	InitializePreprocessor(*_pp, ppOptions, hsOptions, frontendOptions);
 	_ast.reset(new clang::ASTContext(options,
 	                                 *_sm,
 	                                 *_target,
