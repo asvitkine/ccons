@@ -62,7 +62,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	clang::HeaderSearchOptions hsOptions;
 	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
 	_pp.reset(new clang::Preprocessor(*diag, options, *_target, *_sm, *_hs));
-	_pp->setPPCallbacks(callbacks);
+	_pp->addPPCallbacks(callbacks);
 	clang::PreprocessorOptions ppOptions;
 	clang::FrontendOptions frontendOptions;
 	InitializePreprocessor(*_pp, ppOptions, hsOptions, frontendOptions);
