@@ -49,9 +49,9 @@ SrcRange getStmtRangeWithSemicolon(const clang::Stmt *S,
 	// Below code copied from clang::Lexer::MeasureTokenLength():
 	clang::SourceLocation Loc = sm.getInstantiationLoc(ELoc);
 	std::pair<clang::FileID, unsigned> LocInfo = sm.getDecomposedLoc(Loc);
-	std::pair<const char *,const char *> Buffer = sm.getBufferData(LocInfo.first);
-	const char *StrData = Buffer.first+LocInfo.second;
-	clang::Lexer TheLexer(Loc, options, Buffer.first, StrData, Buffer.second);
+	llvm::StringRef Buffer = sm.getBufferData(LocInfo.first);
+	const char *StrData = Buffer.data()+LocInfo.second;
+	clang::Lexer TheLexer(Loc, options, Buffer.begin(), StrData, Buffer.end());
 	clang::Token TheTok;
 	TheLexer.LexFromRawLexer(TheTok);
 	// End copied code.

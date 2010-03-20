@@ -69,9 +69,9 @@ public:
 			return;
 		clang::FileID mainFileID = _sm->getMainFileID();
 		if (_sm->getFileID(MI->getDefinitionLoc()) == mainFileID) {
-			std::pair<const char*, const char*> buf = _sm->getBufferData(mainFileID);
+			llvm::StringRef buf = _sm->getBufferData(mainFileID);
 			SrcRange range = getMacroRange(MI, *_sm, _options);
-			string str(buf.first + range.first, range.second - range.first);
+			string str(buf.data() + range.first, range.second - range.first);
 			_macros.push_back("#define " + str);
 		}
 	}
@@ -82,9 +82,9 @@ public:
 			return;
 		clang::FileID mainFileID = _sm->getMainFileID();
 		if (_sm->getFileID(MI->getDefinitionLoc()) == mainFileID) {
-			std::pair<const char*, const char*> buf = _sm->getBufferData(mainFileID);
+			llvm::StringRef buf = _sm->getBufferData(mainFileID);
 			SrcRange range = getMacroRange(MI, *_sm, _options);
-			string str(buf.first + range.first, range.second - range.first);
+			string str(buf.data() + range.first, range.second - range.first);
 			size_t pos = str.find(' ');
 			if (pos != string::npos)
 				str = str.substr(0, pos);
