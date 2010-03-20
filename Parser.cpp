@@ -48,7 +48,7 @@ namespace ccons {
 ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::Diagnostic *diag,
                                clang::PPCallbacks *callbacks) :
-	_sm(new clang::SourceManager),
+	_sm(new clang::SourceManager(*diag)),
 	_fm(new clang::FileManager),
 	_hs(new clang::HeaderSearch(*_fm))
 {
