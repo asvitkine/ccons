@@ -19,10 +19,8 @@ namespace ccons {
 // DiagnosticsProvider
 //
 
-DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out,
-                                         const clang::LangOptions& opts)
-	: _opts(opts)
-	, _tdp(out, _dop)
+DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out)
+	: _tdp(out, _dop)
 	, _diag(this)
 {
 	_dop.ShowColumn = 0;
@@ -38,9 +36,9 @@ DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out,
 	_diag.setSuppressSystemWarnings(true);
 }
 
-void DiagnosticsProvider::BeginSourceFile(const clang::Preprocessor *pp)
+void DiagnosticsProvider::BeginSourceFile(const clang::LangOptions& opts, const clang::Preprocessor *pp)
 {
-	_tdp.BeginSourceFile(_opts, pp);
+	_tdp.BeginSourceFile(opts, pp);
 }
 
 void DiagnosticsProvider::HandleDiagnostic(clang::Diagnostic::Level DiagLevel,

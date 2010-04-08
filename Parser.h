@@ -48,10 +48,10 @@ public:
 	               clang::Diagnostic *diag,
 	               clang::PPCallbacks *callbacks = 0);
 
-  clang::ASTContext * getASTContext() const;
+	clang::ASTContext * getASTContext() const;
 	clang::Preprocessor * getPreprocessor() const;
 	clang::SourceManager * getSourceManager() const;
-	clang::TargetInfo * ParseOperation::getTargetInfo() const;
+	clang::TargetInfo * getTargetInfo() const;
 
 private:
 
@@ -94,16 +94,16 @@ public:
 	// the Parser permanently.
 	void parse(const std::string& src,
 	           ParseOperation *parseOp,
-						 clang::ASTConsumer *consumer);
+               clang::ASTConsumer *consumer);
 
 	// Parse by implicitely creating a ParseOperation. Equivalent to
 	// parse(src, createParseOperation(diag), consumer).
 	void parse(const std::string& src,
 	           clang::Diagnostic *diag,
-						 clang::ASTConsumer *consumer);
+	           clang::ASTConsumer *consumer);
 
 	// Returns the last parse operation or NULL if there isn't one.
-  ParseOperation * getLastParseOperation() const;
+	ParseOperation * getLastParseOperation() const;
 
 	// Release any accumulated parse operations (including their resulting
 	// ASTs and other clang data structures).
