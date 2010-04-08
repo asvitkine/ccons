@@ -22,7 +22,7 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Linker.h>
 #include <llvm/Module.h>
-#include <llvm/ModuleProvider.h>
+//#include <llvm/ModuleProvider.h>
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -171,7 +171,7 @@ int Console::splitInput(const string& source,
 	_dp->setOffset(pos);
 	std::vector<clang::Stmt*> stmts;
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
-	_dp->BeginSourceFile(parseOp->getPreprocessor());
+	_dp->BeginSourceFile(_options, parseOp->getPreprocessor());
 	clang::SourceManager *sm = parseOp->getSourceManager();
 	StmtSplitter splitter(src, *sm, _options, &stmts);
 	FunctionBodyConsumer<StmtSplitter> consumer(&splitter, "__ccons_internal");
@@ -209,7 +209,7 @@ clang::Stmt * Console::locateStmt(const std::string& line,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
-	_dp->BeginSourceFile(parseOp->getPreprocessor());
+	_dp->BeginSourceFile(_options, parseOp->getPreprocessor());
 	clang::SourceManager& sm = *parseOp->getSourceManager();
 	StmtFinder finder(pos, sm);
 	FunctionBodyConsumer<StmtFinder> consumer(&finder, "__ccons_internal");
@@ -440,7 +440,7 @@ void Console::process(const char *line)
 	if (_buffer.empty() && HandleInternalCommand(line, _debugMode, _out, _err))
 		return;
 
-	_dp.reset(new DiagnosticsProvider(_raw_err, _options));
+	_dp.reset(new DiagnosticsProvider(_raw_err));
 
 	string src = genSource("");	
 
@@ -544,7 +544,7 @@ bool Console::compileLinkAndRun(const string& src,
 	_macros = new MacroDetector(_options);
 	ParseOperation *parseOp =
 	  _parser->createParseOperation(_dp->getDiagnostic(), _macros);
-	_dp->BeginSourceFile(parseOp->getPreprocessor());
+	_dp->BeginSourceFile(_options, parseOp->getPreprocessor());
 	_macros->setSourceManager(parseOp->getSourceManager());
 	_parser->parse(src, parseOp, codegen.get());
 	if (_dp->getDiagnostic()->hasErrorOccurred()) {

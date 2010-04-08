@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(LLVM_NO_RTTI 1)
+find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config PATHS ../../Debug/bin/ NO_DEFAULT_PATH)
+find_program(LLVM_CONFIG_EXECUTABLE llvm-config)
 
-find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config PATHS ../../Debug/bin/)
 if(NOT LLVM_CONFIG_EXECUTABLE)
   message(FATAL_ERROR "LLVM was not found!")
 endif(NOT LLVM_CONFIG_EXECUTABLE)
@@ -11,22 +11,28 @@ exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs engine backend target linker 
 set(LLVM_LIBS "-ldl ${LLVM_LIBS1}")
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags OUTPUT_VARIABLE LLVM_LDFLAGS)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
-exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --host-target | cut -d"-" -f1 OUTPUT_VARIABLE LLVM_HOST_ARCH)
-set(CLANG_LIBS "-lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic -lclangAnalysis")
+exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cflags OUTPUT_VARIABLE LLVM_C_FLAGS)
+exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cxxflags OUTPUT_VARIABLE LLVM_CXX_FLAGS)
+set(CLANG_LIBS "-L../../Debug/lib -lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic -lclangAnalysis")
 
 Project(ccons)
 
-add_executable(ccons ccons.cpp Diagnostics.cpp ClangUtils.cpp Console.cpp Parser.cpp SrcGen.cpp StringUtils.cpp EditLineReader.cpp InternalCommands.cpp LineReader.cpp RemoteConsole.cpp Visitors.cpp complete.c popen2.c)
+set(CCONS_SRCS ccons.cpp Diagnostics.cpp ClangUtils.cpp Console.cpp Parser.cpp SrcGen.cpp StringUtils.cpp EditLineReader.cpp InternalCommands.cpp LineReader.cpp RemoteConsole.cpp Visitors.cpp complete.c popen2.c)
+if(CMAKE_GENERATOR STREQUAL "Xcode")
+    set(CCONS_HDRS ClangUtils.h InternalCommands.h SrcGen.h popen2.h Console.h LineReader.h StringUtils.h Diagnostics.h Parser.h Visitors.h EditLineReader.h RemoteConsole.h complete.h)
+endif()
+
+add_executable(ccons ${CCONS_SRCS} ${CCONS_HDRS})
 
 include_directories(${LLVM_INCLUDE_DIR})
 include_directories(../../include/)
 include_directories(../clang/include/)
 
-set_target_properties(ccons PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -ldl")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti")
+set_target_properties(ccons PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -g")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${LLVM_HOST_ARCH}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${LLVM_HOST_ARCH}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LLVM_C_FLAGS}")
 
 set(LIBS ${LIBS} ${CLANG_LIBS})
 set(LIBS ${LIBS} ${LLVM_LIBS})

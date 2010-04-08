@@ -342,7 +342,7 @@ llvm::MemoryBuffer * Parser::createMemoryBuffer(const string& src,
                                                 clang::SourceManager *sm)
 {
 	llvm::MemoryBuffer *mb =
-		llvm::MemoryBuffer::getMemBufferCopy(&*src.begin(), &*src.end(), name);
+		llvm::MemoryBuffer::getMemBufferCopy(src, name);
 	assert(mb && "Error creating MemoryBuffer!");
 	sm->createMainFileIDForMemBuffer(mb);
 	assert(!sm->getMainFileID().isInvalid() && "Error creating MainFileID!");

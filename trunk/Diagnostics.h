@@ -31,12 +31,12 @@ class DiagnosticsProvider : public clang::DiagnosticClient {
 
 public:
 
-	DiagnosticsProvider(llvm::raw_os_ostream& out, const clang::LangOptions& opts);
+	DiagnosticsProvider(llvm::raw_os_ostream& out);
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
 	                      const clang::DiagnosticInfo &Info);
 
-	void BeginSourceFile(const clang::Preprocessor *pp);
+	void BeginSourceFile(const clang::LangOptions& opts, const clang::Preprocessor *pp);
 
 	void setOffset(unsigned offset);
 
@@ -44,7 +44,6 @@ public:
 
 private:
 
-	const clang::LangOptions& _opts;
 	unsigned _offs;
 	clang::DiagnosticOptions _dop;
 	clang::TextDiagnosticPrinter _tdp;
