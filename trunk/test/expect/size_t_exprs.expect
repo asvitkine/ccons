@@ -13,8 +13,9 @@ proc check {input output} {
 spawn ../../ccons
 send "#include<stdio.h>\n"
 send "size_t x = 1;\n"
-send "size_t y = 4294967295;\n"
+send "size_t y = (size_t)-1;\n"
 send "size_t z;\n"
+send "void* p;\n"
 check "x;"            "=> (size_t) 1"
-check "y;"            "=> (size_t) 4294967295"
 check "z = x + y;"    "=> (size_t) 0"
+check "sizeof(x) == sizeof(p);" "=> (int) 1"

@@ -261,7 +261,7 @@ void Console::printGV(const llvm::Function *F,
 			if (QT->isUnsignedIntegerType())
 				oprintf(_out, "=> (%s) %lu\n", type, GV.IntVal.getZExtValue());
 			else
-				oprintf(_out, "=> (%s) %ld\n", type, GV.IntVal.getZExtValue());
+				oprintf(_out, "=> (%s) %ld\n", type, GV.IntVal.getSExtValue());
 			return;
 		case llvm::Type::FloatTyID:
 			oprintf(_out, "=> (%s) %f\n", type, GV.FloatVal);
