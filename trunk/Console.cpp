@@ -32,8 +32,8 @@
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Basic/TargetInfo.h>
-#include <clang/CodeGen/CodeGenOptions.h>
 #include <clang/CodeGen/ModuleBuilder.h>
+#include <clang/Frontend/CodeGenOptions.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Lex/MacroInfo.h>
 
