@@ -538,6 +538,7 @@ bool Console::compileLinkAndRun(const string& src,
 
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CodeGenOptions codeGenOptions;
+	codeGenOptions.InstrumentFunctions = false;
 	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", codeGenOptions, _context));
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");

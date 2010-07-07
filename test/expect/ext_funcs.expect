@@ -22,4 +22,4 @@ send "#include <math.h>\n"
 check "pow(2.0, 4.0);" "=> (double) 16.0"
 
 check "strcmp(\"abc\", \"def\");" \
-      "error: implicit declaration of function 'strcmp'"
+      "implicit declaration of function 'strcmp'"
