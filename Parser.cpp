@@ -71,7 +71,8 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	                                 *_target,
 	                                 _pp->getIdentifierTable(),
 	                                 _pp->getSelectorTable(),
-	                                 _pp->getBuiltinInfo()));
+	                                 _pp->getBuiltinInfo(),
+	                                 0));
 }
 
 clang::ASTContext * ParseOperation::getASTContext() const
