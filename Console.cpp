@@ -22,7 +22,6 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Linker.h>
 #include <llvm/Module.h>
-//#include <llvm/ModuleProvider.h>
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -76,7 +75,8 @@ public:
 		}
 	}
 
-	void MacroUndefined(const clang::IdentifierInfo *II,
+	void MacroUndefined(clang::SourceLocation Loc,
+	                    const clang::IdentifierInfo *II,
 	                    const clang::MacroInfo *MI) {
 		if (MI->isBuiltinMacro())
 			return;
@@ -330,7 +330,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 				                         VD->getType(), VD->getNameAsCString());
 				if (const clang::Expr *I = VD->getInit()) {
 					SrcRange range = getStmtRange(I, *sm, _options);
-					if (I->isConstantInitializer(*context)) {
+					if (I->isConstantInitializer(*context, false)) {
 						// Keep the whole thing in the global context.
 						std::stringstream global;
 						global << decl << " = ";
