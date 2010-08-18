@@ -327,7 +327,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 				 E = DS->decl_end(); D != E; ++D) {
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
 				string decl = genVarDecl(clang::PrintingPolicy(_options),
-				                         VD->getType(), VD->getNameAsCString());
+				                         VD->getType(), VD->getName().str().c_str());
 				if (const clang::Expr *I = VD->getInit()) {
 					SrcRange range = getStmtRange(I, *sm, _options);
 					if (I->isConstantInitializer(*context, false)) {
@@ -344,7 +344,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						unsigned numInits = ILE->getNumInits();
 						for (unsigned i = 0; i < numInits; i++) {
 							std::stringstream stmt;
-							stmt << VD->getNameAsCString() << "[" << i << "] = ";
+							stmt << VD->getName().str().c_str() << "[" << i << "] = ";
 							range = getStmtRange(ILE->getInit(i), *sm, _options);
 							stmt << src.substr(range.first, range.second - range.first) << ";";
 							stmts.push_back(stmt.str());
@@ -352,7 +352,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						*appendix += decl + ";\n";
 					} else {
 						std::stringstream stmt;
-						stmt << VD->getNameAsCString() << " = "
+						stmt << VD->getName().str().c_str() << " = "
 						     << src.substr(range.first, range.second - range.first) << ";";
 						stmts.push_back(stmt.str());
 						*appendix += decl + ";\n";
@@ -466,6 +466,11 @@ void Console::process(const char *line)
 			oprintf(_err, "Treating input as top-level.\n");
 		appendix = _buffer;
 		_buffer.clear();
+		unsigned start = 0;
+		while (isspace(appendix[start]) && start < appendix.length()) {
+			start++;
+		}
+		appendix = appendix.substr(start);
 		if (!fnDecls.empty()) {
 			if (_debugMode)
 				oprintf(_err, "Recording %d function declaration%s...\n",
