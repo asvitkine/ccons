@@ -27,7 +27,7 @@ namespace ccons {
 // that can be used for multiple parse operations.
 //
 
-class DiagnosticsProvider : public clang::DiagnosticClient {
+class DiagnosticsProvider {
 
 public:
 
