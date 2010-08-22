@@ -19,9 +19,34 @@ namespace ccons {
 // DiagnosticsProvider
 //
 
+namespace {
+	class DiagnosticsProviderClient : public clang::DiagnosticClient {
+	public:
+
+		DiagnosticsProviderClient(DiagnosticsProvider *dp)
+			: _dp(dp)
+		{
+		}
+
+		void BeginSourceFile(const clang::LangOptions& opts,
+		                     const clang::Preprocessor *pp)
+		{
+			_dp->BeginSourceFile(opts, pp);
+		}
+
+		void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
+		                      const clang::DiagnosticInfo &Info)
+		{
+			_dp->HandleDiagnostic(DiagLevel, Info);
+		}
+	private:
+		DiagnosticsProvider *_dp;
+	};
+}
+
 DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out)
 	: _tdp(out, _dop)
-	, _diag(this)
+	, _diag(new DiagnosticsProviderClient(this))
 {
 	_dop.ShowColumn = 0;
 	_dop.ShowSourceRanges = 1;

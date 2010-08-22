@@ -27,7 +27,7 @@
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/LexDiagnostic.h>
 #include <clang/Lex/Preprocessor.h>
-#include <clang/Sema/ParseAST.h>
+#include <clang/Parse/ParseAST.h>
 #include <clang/Sema/SemaDiagnostic.h>
 
 #include <clang/Basic/TargetInfo.h>
@@ -136,9 +136,9 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		indentLevel = 1;
 		return Incomplete;
 	}
-	
-	ProxyDiagnosticClient pdc(NULL);
-	clang::Diagnostic diag(&pdc);
+
+	ProxyDiagnosticClient *pdc = new ProxyDiagnosticClient(NULL); // do not output diagnostics
+	clang::Diagnostic diag(pdc); // diag takes ownership of pdc
 	llvm::OwningPtr<ParseOperation>
 		parseOp(new ParseOperation(_options, &diag));
 	llvm::MemoryBuffer *memBuf =
@@ -154,8 +154,8 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (stackSize > 0) return Incomplete;
-		ProxyDiagnosticClient pdc(NULL); // do not output diagnostics
-		clang::Diagnostic diag(&pdc);
+		ProxyDiagnosticClient *pdc = new ProxyDiagnosticClient(NULL); // do not output diagnostics
+		clang::Diagnostic diag(pdc); // diag takes ownership of pdc
 		// Setting this ensures "foo();" is not a valid top-level declaration.
 		diag.setDiagnosticMapping(clang::diag::ext_missing_type_specifier,
 	                            clang::diag::MAP_ERROR);
@@ -201,9 +201,9 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		consumer.maxPos = consumer.pos + buffer.length();
 		consumer.sm = parseOp->getSourceManager();
 		parse(src, parseOp, &consumer);
-		if (pdc.hadError(clang::diag::err_unterminated_block_comment))
+		if (pdc->hadError(clang::diag::err_unterminated_block_comment))
 			return Incomplete;
-		if (!pdc.hadErrors() && (!consumer.fds.empty() || consumer.hadIncludedDecls)) {
+		if (!pdc->hadErrors() && (!consumer.fds.empty() || consumer.hadIncludedDecls)) {
 			if (!consumer.fds.empty())
 				fds->swap(consumer.fds);
 			return TopLevel;
