@@ -25,7 +25,7 @@ proc check2 {input output1 output2} {
 spawn ../../ccons
 send "#include <stdio.h>\n"
 send "int (*p)(char const *restrict, ...);\n"
-check "p = printf;"   "=> (int (*)(char const *restrict, ...)) 0x"
+check "p = printf;"   "=> (int (*)(const char *restrict, ...)) 0x"
 check "p == printf;"  "=> (int) 1"
 check "p != printf;"  "=> (int) 0"
 check2 "puts;" "=> (int (*)(const char *)) 0x" "=> (int (*)(char const *)) 0x"
