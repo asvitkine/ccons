@@ -32,3 +32,5 @@ send "int a() {return 1;} int b() {return 2;}\n"
 check "a();" "=> (int) 1"
 check "b();" "=> (int) 2"
 
+send "static int foo() {return 3;}\n"
+check "foo();" "=> (int) 3"

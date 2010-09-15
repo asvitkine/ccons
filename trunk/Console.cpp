@@ -486,6 +486,9 @@ void Console::process(const char *line)
 		if (hadErrors)
 			return;
 
+		if (appendix.find("static", 0) == 0 && isspace(appendix[sizeof("static") - 1]))
+			appendix = appendix.substr(sizeof("static") - 1);
+
 		src = genSource(appendix);
 		string empty;
 		clang::QualType retType((clang::Type *) NULL, 0);
