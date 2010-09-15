@@ -283,8 +283,8 @@ void Console::printGV(const llvm::Function *F,
 				oprintf(_out, "=> (%s) \"%s\"\n", type, p);
 			} else if (QT->isFunctionType()) {
 				string str = "*";
-				QT.getUnqualifiedType().getAsStringInternal(str,
-				                        clang::PrintingPolicy(_options));
+				clang::PrintingPolicy PP(_options);
+				QT.getUnqualifiedType().getAsStringInternal(str, PP);
 				type = str.c_str();
 				oprintf(_out, "=> (%s) %p\n", type, p);
 			} else {
@@ -323,11 +323,20 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 		std::vector<string> stmts;
 		clang::SourceManager *sm = _parser->getLastParseOperation()->getSourceManager();
 		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
+		clang::PrintingPolicy PP(_options);
+		PP.AnonymousTagLocations = false;
 		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 				 E = DS->decl_end(); D != E; ++D) {
 			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
-				string decl = genVarDecl(clang::PrintingPolicy(_options),
-				                         VD->getType(), VD->getName().str().c_str());
+				string decl = genVarDecl(PP, VD->getType(), VD->getName().str().c_str());
+				if (decl.find("struct <anonymous>", 0) == 0) {
+					SrcRange range = constructSrcRange(*sm, _options, VD->getLocStart(), VD->getLocEnd());
+					string orig = src.substr(range.first, range.second - range.first);
+					string::size_type assignIndex = orig.find("=");
+					if (assignIndex != string::npos) {
+						decl = orig.substr(0, assignIndex);
+					}
+				}
 				if (const clang::Expr *I = VD->getInit()) {
 					SrcRange range = getStmtRange(I, *sm, _options);
 					if (I->isConstantInitializer(*context, false)) {

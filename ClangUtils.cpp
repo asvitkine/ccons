@@ -29,10 +29,7 @@ SrcRange getStmtRange(const clang::Stmt *S,
 	// This is necessary to get the correct range of function-like macros.
 	if (SLoc == ELoc && S->getLocEnd().isMacroID())
 		ELoc = sm.getInstantiationRange(S->getLocEnd()).second;
-	unsigned start = sm.getFileOffset(SLoc);
-	unsigned end   = sm.getFileOffset(ELoc);
-	end += clang::Lexer::MeasureTokenLength(ELoc, sm, options);
-	return SrcRange(start, end);
+	return constructSrcRange(sm, options, SLoc, ELoc);
 }
 
 // Get the source range of the specified Stmt, ensuring that a semicolon is
@@ -75,11 +72,18 @@ SrcRange getMacroRange(const clang::MacroInfo *MI,
 {
 	clang::SourceLocation SLoc = sm.getInstantiationLoc(MI->getDefinitionLoc());
 	clang::SourceLocation ELoc = sm.getInstantiationLoc(MI->getDefinitionEndLoc());
+	return constructSrcRange(sm, options, SLoc, ELoc);
+}
+
+SrcRange constructSrcRange(const clang::SourceManager& sm,
+                           const clang::LangOptions& options,
+                           const clang::SourceLocation& SLoc,
+                           const clang::SourceLocation& ELoc)
+{
 	unsigned start = sm.getFileOffset(SLoc);
 	unsigned end   = sm.getFileOffset(ELoc);
 	end += clang::Lexer::MeasureTokenLength(ELoc, sm, options);
 	return SrcRange(start, end);
-
 }
 
 } // namespace ccons

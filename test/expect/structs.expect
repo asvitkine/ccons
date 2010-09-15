@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+log_user 0
+set timeout 2
+
+proc check {input output} {
+    send "$input\n"
+    expect timeout {
+	send_user "Failed: input \"$input\" did not result in \"$output\" \n"
+	exit
+    } "$output"
+}
+
+spawn ../../ccons
+send "struct {int x; int y; int z;} Xs\[\] = {{1,2},{1,2}};\n"
+check "Xs\[0\].x;"     "=> (int) 1"
+check "Xs\[0\].y;"     "=> (int) 2"
+check "Xs\[0\].z = 3;" "=> (int) 3"
+check "Xs\[0\].z;"     "=> (int) 3"

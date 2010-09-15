@@ -16,6 +16,7 @@
 #include <llvm/ADT/OwningPtr.h>
 
 namespace clang {
+	class SourceLocation;
 	class SourceManager;
 	class Stmt;
 	class Preprocessor;
@@ -43,6 +44,11 @@ SrcRange getStmtRangeWithSemicolon(const clang::Stmt *S,
 SrcRange getMacroRange(const clang::MacroInfo *MI,
                        const clang::SourceManager& sm,
                        const clang::LangOptions& options);
+
+SrcRange constructSrcRange(const clang::SourceManager& sm,
+                           const clang::LangOptions& options,
+                           const clang::SourceLocation& SLoc,
+                           const clang::SourceLocation& ELoc);
 
 } // namespace ccons
 
