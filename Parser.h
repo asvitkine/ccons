@@ -25,6 +25,7 @@ namespace clang {
 	class ASTConsumer;
 	class ASTContext;
 	class Diagnostic;
+	class FileSystemOptions;
 	class FunctionDecl;
 	class Preprocessor;
 	class PPCallbacks;
@@ -55,8 +56,9 @@ public:
 
 private:
 
-	llvm::OwningPtr<clang::SourceManager> _sm;
+	llvm::OwningPtr<clang::FileSystemOptions> _fsOpts;
 	llvm::OwningPtr<clang::FileManager> _fm;
+	llvm::OwningPtr<clang::SourceManager> _sm;
 	llvm::OwningPtr<clang::HeaderSearch> _hs;
 	llvm::OwningPtr<clang::Preprocessor> _pp;
 	llvm::OwningPtr<clang::ASTContext> _ast;
