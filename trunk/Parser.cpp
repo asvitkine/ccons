@@ -18,6 +18,7 @@
 
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTConsumer.h>
+#include <clang/Basic/FileSystemOptions.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Frontend/FrontendOptions.h>
@@ -48,9 +49,10 @@ namespace ccons {
 ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::Diagnostic *diag,
                                clang::PPCallbacks *callbacks) :
-	_sm(new clang::SourceManager(*diag)),
+	_fsOpts(new clang::FileSystemOptions),
 	_fm(new clang::FileManager),
-	_hs(new clang::HeaderSearch(*_fm))
+	_sm(new clang::SourceManager(*diag, *_fm, *_fsOpts)),
+	_hs(new clang::HeaderSearch(*_fm, *_fsOpts))
 {
 	llvm::Triple triple(LLVM_HOSTTRIPLE);
 	clang::TargetOptions targetOptions;
@@ -65,7 +67,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_pp->addPPCallbacks(callbacks);
 	clang::PreprocessorOptions ppOptions;
 	clang::FrontendOptions frontendOptions;
-	InitializePreprocessor(*_pp, ppOptions, hsOptions, frontendOptions);
+	InitializePreprocessor(*_pp, *_fsOpts, ppOptions, hsOptions, frontendOptions);
 	_ast.reset(new clang::ASTContext(options,
 	                                 *_sm,
 	                                 *_target,
