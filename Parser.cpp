@@ -50,9 +50,9 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::Diagnostic *diag,
                                clang::PPCallbacks *callbacks) :
 	_fsOpts(new clang::FileSystemOptions),
-	_fm(new clang::FileManager),
-	_sm(new clang::SourceManager(*diag, *_fm, *_fsOpts)),
-	_hs(new clang::HeaderSearch(*_fm, *_fsOpts))
+	_fm(new clang::FileManager(*_fsOpts)),
+	_sm(new clang::SourceManager(*diag, *_fm)),
+	_hs(new clang::HeaderSearch(*_fm))
 {
 	llvm::Triple triple(LLVM_HOSTTRIPLE);
 	clang::TargetOptions targetOptions;
@@ -67,7 +67,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_pp->addPPCallbacks(callbacks);
 	clang::PreprocessorOptions ppOptions;
 	clang::FrontendOptions frontendOptions;
-	InitializePreprocessor(*_pp, *_fsOpts, ppOptions, hsOptions, frontendOptions);
+	InitializePreprocessor(*_pp, ppOptions, hsOptions, frontendOptions);
 	_ast.reset(new clang::ASTContext(options,
 	                                 *_sm,
 	                                 *_target,
@@ -139,10 +139,9 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		return Incomplete;
 	}
 
-	ProxyDiagnosticClient *pdc = new ProxyDiagnosticClient(NULL); // do not output diagnostics
-	clang::Diagnostic diag(pdc); // diag takes ownership of pdc
+	NullDiagnosticProvider ndp;
 	llvm::OwningPtr<ParseOperation>
-		parseOp(new ParseOperation(_options, &diag));
+		parseOp(new ParseOperation(_options, ndp.getDiagnostic()));
 	llvm::MemoryBuffer *memBuf =
 		createMemoryBuffer(buffer, "", parseOp->getSourceManager());
 
@@ -156,11 +155,11 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	// TokWasDo is used for do { ... } while (...); loops
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (stackSize > 0) return Incomplete;
-		ProxyDiagnosticClient *pdc = new ProxyDiagnosticClient(NULL); // do not output diagnostics
-		clang::Diagnostic diag(pdc); // diag takes ownership of pdc
+		NullDiagnosticProvider ndp;
+		clang::Diagnostic& diag = *ndp.getDiagnostic();
 		// Setting this ensures "foo();" is not a valid top-level declaration.
 		diag.setDiagnosticMapping(clang::diag::ext_missing_type_specifier,
-	                            clang::diag::MAP_ERROR);
+		                          clang::diag::MAP_ERROR, clang::SourceLocation());
 		diag.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
 		struct : public clang::ASTConsumer {
@@ -203,6 +202,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		consumer.maxPos = consumer.pos + buffer.length();
 		consumer.sm = parseOp->getSourceManager();
 		parse(src, parseOp, &consumer);
+		ProxyDiagnosticClient *pdc = ndp.getProxyDiagnosticClient();
 		if (pdc->hadError(clang::diag::err_unterminated_block_comment))
 			return Incomplete;
 		if (!pdc->hadErrors() && (!consumer.fds.empty() || consumer.hadIncludedDecls)) {

@@ -31,7 +31,7 @@ class DiagnosticsProvider {
 
 public:
 
-	DiagnosticsProvider(llvm::raw_os_ostream& out);
+	explicit DiagnosticsProvider(llvm::raw_os_ostream& out);
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
 	                      const clang::DiagnosticInfo &Info);
@@ -47,6 +47,7 @@ private:
 	unsigned _offs;
 	clang::DiagnosticOptions _dop;
 	clang::TextDiagnosticPrinter _tdp;
+	llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> _diagIDs;
 	clang::Diagnostic _diag;
 	std::set<std::pair<clang::diag::kind, unsigned> > _memory;
 
@@ -61,7 +62,7 @@ class ProxyDiagnosticClient : public clang::DiagnosticClient {
 
 public:
 
-	ProxyDiagnosticClient(clang::DiagnosticClient *DC);
+	explicit ProxyDiagnosticClient(clang::DiagnosticClient *DC);
 
 	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
 	                      const clang::DiagnosticInfo &Info);
@@ -73,6 +74,27 @@ private:
 
 	clang::DiagnosticClient *_DC;
 	std::multimap<clang::diag::kind, const clang::DiagnosticInfo> _errors;
+
+};
+
+//
+// NullDiagnosticProvider
+//
+
+class NullDiagnosticProvider {
+
+public:
+
+	NullDiagnosticProvider();
+
+	clang::Diagnostic * getDiagnostic();
+	ProxyDiagnosticClient * getProxyDiagnosticClient();
+
+private:
+
+	ProxyDiagnosticClient *_pdc; // owner by _diagnostic
+	llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> _diagnosticIDs;
+	clang::Diagnostic _diagnostic;
 
 };
 

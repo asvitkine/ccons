@@ -46,18 +46,19 @@ namespace {
 
 DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out)
 	: _tdp(out, _dop)
-	, _diag(new DiagnosticsProviderClient(this))
+	, _diagIDs(new clang::DiagnosticIDs())
+	, _diag(_diagIDs, new DiagnosticsProviderClient(this))
 {
 	_dop.ShowColumn = 0;
 	_dop.ShowSourceRanges = 1;
-	_diag.setDiagnosticMapping(clang::diag::ext_implicit_function_decl,
-	                           clang::diag::MAP_ERROR);
-	_diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
-	                           clang::diag::MAP_IGNORE);
-	_diag.setDiagnosticMapping(clang::diag::warn_missing_prototype,
-	                           clang::diag::MAP_IGNORE);
-	_diag.setDiagnosticMapping(clang::diag::pp_macro_not_used,
-	                           clang::diag::MAP_IGNORE);
+	_diag.setDiagnosticMapping((clang::diag::kind)clang::diag::ext_implicit_function_decl,
+	                           clang::diag::MAP_ERROR, clang::SourceLocation());
+	_diag.setDiagnosticMapping((clang::diag::kind)clang::diag::warn_unused_expr,
+	                           clang::diag::MAP_IGNORE, clang::SourceLocation());
+	_diag.setDiagnosticMapping((clang::diag::kind)clang::diag::warn_missing_prototype,
+	                           clang::diag::MAP_IGNORE, clang::SourceLocation());
+	_diag.setDiagnosticMapping((clang::diag::kind)clang::diag::pp_macro_not_used,
+	                           clang::diag::MAP_IGNORE, clang::SourceLocation());
 	_diag.setSuppressSystemWarnings(true);
 }
 
@@ -70,7 +71,7 @@ void DiagnosticsProvider::HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
                                            const clang::DiagnosticInfo &Info)
 {
 	std::pair<clang::diag::kind, unsigned> record = std::make_pair(Info.getID(),
-		Info.getLocation().getManager().getFileOffset(Info.getLocation()) - _offs);
+		Info.getSourceManager().getFileOffset(Info.getLocation()) - _offs);
 	if (_memory.insert(record).second) {
 		_tdp.HandleDiagnostic(DiagLevel, Info);
 	}
@@ -114,6 +115,26 @@ bool ProxyDiagnosticClient::hadError(clang::diag::kind Kind) const
 bool ProxyDiagnosticClient::hadErrors() const
 {
 	return !_errors.empty();
+}
+
+//
+// NullDiagnosticProvider
+//
+
+NullDiagnosticProvider::NullDiagnosticProvider()
+	: _diagnosticIDs(new clang::DiagnosticIDs())
+	, _diagnostic(_diagnosticIDs, _pdc = new ProxyDiagnosticClient(NULL))
+{
+}
+
+clang::Diagnostic * NullDiagnosticProvider::getDiagnostic()
+{
+	return &_diagnostic;
+}
+
+ProxyDiagnosticClient * NullDiagnosticProvider::getProxyDiagnosticClient()
+{
+	return _pdc;
 }
 
 } // namespace ccons
