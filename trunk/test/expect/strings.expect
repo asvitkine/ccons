@@ -11,8 +11,8 @@ proc check {input output} {
 }
 
 spawn ../../ccons
-check {"Hello World!";} {=> (char \[13\]) "Hello World!"}
+check {"Hello World!";} {=> (char *) "Hello World!"}
 send "char *x=\"Hi\";\n"
 check {x;} {=> (char *) "Hi"}
 send "char y\[3\]=\"Hi\";\n"
-check {y;} {=> (char \[3\]) "Hi"}
+check {y;} {=> (char *) "Hi"}

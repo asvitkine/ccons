@@ -62,7 +62,7 @@ public:
 	void setSourceManager(clang::SourceManager *sm) { _sm = sm; }
 	std::vector<string>& getMacrosVector() { return _macros; }
 
-	void MacroDefined(const clang::IdentifierInfo *II,
+	void MacroDefined(const clang::Token& token,
 	                  const clang::MacroInfo *MI) {
 		if (MI->isBuiltinMacro())
 			return;
@@ -75,8 +75,7 @@ public:
 		}
 	}
 
-	void MacroUndefined(clang::SourceLocation Loc,
-	                    const clang::IdentifierInfo *II,
+	void MacroUndefined(const clang::Token& token,
 	                    const clang::MacroInfo *MI) {
 		if (MI->isBuiltinMacro())
 			return;
@@ -593,7 +592,7 @@ bool Console::compileLinkAndRun(const string& src,
 			if (_debugMode)
 				oprintf(_err, "Calling function %s()...\n", fName.c_str());
 			llvm::GenericValue result = _engine->runFunction(F, params);
-			if (retType.getTypePtr())
+			if (!retType.isNull() && retType.getTypePtr())
 				printGV(F, result, retType);
 		} else {
 			if (_debugMode)
