@@ -14,7 +14,7 @@
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/CommandLine.h>
-#include <llvm/System/Signals.h>
+#include <llvm/Support/Signals.h>
 #include <llvm/Target/TargetSelect.h>
 
 #include "Console.h"
@@ -33,16 +33,16 @@ using ccons::StdInLineReader;
 
 static llvm::cl::opt<bool>
 	DebugMode("ccons-debug",
-						llvm::cl::desc("Print debugging information"));
+			llvm::cl::desc("Print debugging information"));
 static llvm::cl::opt<bool>
 	UseStdIo("ccons-use-std-io",
-	         llvm::cl::desc("Use standard IO for input and output"));
+			llvm::cl::desc("Use standard IO for input and output"));
 static llvm::cl::opt<bool>
 	SerializedOutput("ccons-serialized-output",
-	                 llvm::cl::desc("Output will be serialized"));
+			llvm::cl::desc("Output will be serialized"));
 static llvm::cl::opt<bool>
 	MultiProcess("ccons-multi-process",
-							 llvm::cl::desc("Run in multi-process mode"));
+			llvm::cl::desc("Run in multi-process mode"));
 
 static std::stringstream ss_out;
 static std::stringstream ss_err;
