@@ -12,8 +12,8 @@
 
 #include <string.h>
 
-#include <llvm/System/DynamicLibrary.h>
-#include <llvm/System/Path.h>
+#include <llvm/Support/DynamicLibrary.h>
+#include <llvm/Support/Path.h>
 
 namespace ccons {
 
