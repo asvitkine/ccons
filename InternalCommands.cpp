@@ -17,6 +17,23 @@
 
 namespace ccons {
 
+// Prints the help text.
+static void HandleHelpCommand(const char *arg, bool debugMode,
+                              std::ostream& out, std::ostream& err)
+{
+	oprintf(out, "The following commands are available:\n");
+	oprintf(out, "  :help - displays this message\n");
+	oprintf(out, "  :load <library path> - dynamically loads specified library\n");
+	oprintf(out, "  :version - displays ccons version information\n");
+}
+
+// Prints the version text.
+static void HandleVersionCommand(const char *arg, bool debugMode,
+                                std::ostream& out, std::ostream& err)
+{
+	PrintVersionInformation(out);
+}															
+
 // Loads the library that was specified. 
 static void HandleLoadCommand(const char *arg, bool debugMode,
                               std::ostream& out, std::ostream& err)
@@ -46,30 +63,31 @@ bool HandleInternalCommand(const char *input, bool debugMode,
 	while (isspace(*input)) input++;
 
 	if (*input == ':') {
-		int i;
-		char arg[4096], *argp = arg;
+		struct {
+			const char *name;
+			void (*handler)(const char *arg, bool debugMode,
+			                std::ostream& out, std::ostream& err);
+		}	commands[] = {
+			{ "help",    HandleHelpCommand    },
+			{ "version", HandleVersionCommand },
+			{ "load",    HandleLoadCommand    },
+		};
+		const unsigned commandCount = sizeof(commands)/sizeof(commands[0]);
 		input++;
-
-		strncpy(arg, input + 5, sizeof(arg) - 1);
-		arg[sizeof(arg) - 1] = '\0';
-
-		while (isspace(*argp)) argp++;
-		for (i = strlen(arg) - 1; i >= 0 && isspace(arg[i]); i--)
-			arg[i] = '\0';
-
-		if (!strncmp(input, "help", 4)) {
-			oprintf(out, "The following commands are available:\n");
-			oprintf(out, "  :help - displays this message\n");
-			oprintf(out, "  :load <library path> - dynamically loads specified library\n");
-			oprintf(out, "  :version - displays ccons version information\n");
-		} else if (!strncmp(input, "version", 7)) {
-			PrintVersionInformation(out);
-		} else if (!strncmp(input, "load", 4)) {
-			HandleLoadCommand(argp, debugMode, out, err);
-		} else {
-			oprintf(out, "Invalid command specified. Type :help for a list of commands.\n");
+		for (unsigned i = 0; i < commandCount; i++) {
+			const unsigned nameLength = strlen(commands[i].name);
+			if (!strncmp(input, commands[i].name, nameLength) &&
+			    (input[nameLength] == '\0' || isspace(input[nameLength]))) {
+				int index = nameLength + 1;
+				while (isspace(input[index])) index++;
+				int length = strlen(input + index);
+				while (length > 0 && isspace(input[index + length - 1]))
+					length--;
+				std::string args(&input[index], length);
+				commands[i].handler(args.c_str(), debugMode, out, err);
+				return true;
+			}
 		}
-		return true;
 	}
 	return false;
 }
