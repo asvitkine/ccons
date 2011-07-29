@@ -88,7 +88,7 @@ public:
 
 	void HandleTopLevelDecl(clang::DeclGroupRef D) {
 		for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
-			if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
+			if (clang::FunctionDecl *FD = llvm::dyn_cast<clang::FunctionDecl>(*I)) {
 				if (FD->getName().str() == _funcName) {
 					if (clang::Stmt *S = FD->getBody()) {
 						_SV->VisitChildren(S);
