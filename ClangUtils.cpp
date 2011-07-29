@@ -24,11 +24,11 @@ SrcRange getStmtRange(const clang::Stmt *S,
                       const clang::SourceManager& sm,
                       const clang::LangOptions& options)
 {
-	clang::SourceLocation SLoc = sm.getInstantiationLoc(S->getLocStart());
-	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
+	clang::SourceLocation SLoc = sm.getExpansionLoc(S->getLocStart());
+	clang::SourceLocation ELoc = sm.getExpansionLoc(S->getLocEnd());
 	// This is necessary to get the correct range of function-like macros.
 	if (SLoc == ELoc && S->getLocEnd().isMacroID())
-		ELoc = sm.getInstantiationRange(S->getLocEnd()).second;
+		ELoc = sm.getExpansionRange(S->getLocEnd()).second;
 	return constructSrcRange(sm, options, SLoc, ELoc);
 }
 
@@ -38,13 +38,13 @@ SrcRange getStmtRangeWithSemicolon(const clang::Stmt *S,
                                    const clang::SourceManager& sm,
                                    const clang::LangOptions& options)
 {
-	clang::SourceLocation SLoc = sm.getInstantiationLoc(S->getLocStart());
-	clang::SourceLocation ELoc = sm.getInstantiationLoc(S->getLocEnd());
+	clang::SourceLocation SLoc = sm.getExpansionLoc(S->getLocStart());
+	clang::SourceLocation ELoc = sm.getExpansionLoc(S->getLocEnd());
 	unsigned start = sm.getFileOffset(SLoc);
 	unsigned end   = sm.getFileOffset(ELoc);
 
 	// Below code copied from clang::Lexer::MeasureTokenLength():
-	clang::SourceLocation Loc = sm.getInstantiationLoc(ELoc);
+	clang::SourceLocation Loc = sm.getExpansionLoc(ELoc);
 	std::pair<clang::FileID, unsigned> LocInfo = sm.getDecomposedLoc(Loc);
 	llvm::StringRef Buffer = sm.getBufferData(LocInfo.first);
 	const char *StrData = Buffer.data()+LocInfo.second;
@@ -70,8 +70,8 @@ SrcRange getMacroRange(const clang::MacroInfo *MI,
                        const clang::SourceManager& sm,
                        const clang::LangOptions& options)
 {
-	clang::SourceLocation SLoc = sm.getInstantiationLoc(MI->getDefinitionLoc());
-	clang::SourceLocation ELoc = sm.getInstantiationLoc(MI->getDefinitionEndLoc());
+	clang::SourceLocation SLoc = sm.getExpansionLoc(MI->getDefinitionLoc());
+	clang::SourceLocation ELoc = sm.getExpansionLoc(MI->getDefinitionEndLoc());
 	return constructSrcRange(sm, options, SLoc, ELoc);
 }
 

@@ -170,12 +170,12 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 			std::vector<clang::FunctionDecl*> fds;
 			void HandleTopLevelDecl(clang::DeclGroupRef D) {
 				for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
-					if (clang::FunctionDecl *FD = dyn_cast<clang::FunctionDecl>(*I)) {
+					if (clang::FunctionDecl *FD = llvm::dyn_cast<clang::FunctionDecl>(*I)) {
 						clang::SourceLocation Loc = FD->getTypeSpecStartLoc();
 						if (!Loc.isValid())
 							continue;
 						if (sm->isFromMainFile(Loc)) {
-							unsigned offset = sm->getFileOffset(sm->getInstantiationLoc(Loc));
+							unsigned offset = sm->getFileOffset(sm->getExpansionLoc(Loc));
 							if (offset >= pos) {
 								fds.push_back(FD);
 							}

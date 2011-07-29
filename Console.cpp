@@ -274,7 +274,7 @@ void Console::printGV(const llvm::Function *F,
 			if (const clang::PointerType *PT = QT->getAs<clang::PointerType>()) {
 				couldBeString = PT->getPointeeType()->isCharType();
 			} else if (QT->isArrayType()) {
-				if (const clang::ArrayType *AT = dyn_cast<clang::ArrayType>(QT)) {
+				if (const clang::ArrayType *AT = llvm::dyn_cast<clang::ArrayType>(QT)) {
 					couldBeString = AT->getElementType()->isCharType();
 				}
 			}
@@ -311,7 +311,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 	bool initializers = false;
 	for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 			 E = DS->decl_end(); D != E; ++D) {
-		if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
+		if (const clang::VarDecl *VD = llvm::dyn_cast<clang::VarDecl>(*D)) {
 			if (VD->getInit()) {
 				initializers = true;
 			}
@@ -326,7 +326,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 		PP.AnonymousTagLocations = false;
 		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 				 E = DS->decl_end(); D != E; ++D) {
-			if (const clang::VarDecl *VD = dyn_cast<clang::VarDecl>(*D)) {
+			if (const clang::VarDecl *VD = llvm::dyn_cast<clang::VarDecl>(*D)) {
 				string decl = genVarDecl(PP, VD->getType(), VD->getName().str().c_str());
 				if (decl.find("struct <anonymous>", 0) == 0) {
 					SrcRange range = constructSrcRange(*sm, _options, VD->getLocStart(), VD->getLocEnd());
@@ -344,7 +344,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 						global << decl << " = ";
 						global << src.substr(range.first, range.second - range.first);
 						*appendix += global.str() + ";\n";
-					} else if (const clang::InitListExpr *ILE = dyn_cast<clang::InitListExpr>(I)) {
+					} else if (const clang::InitListExpr *ILE = llvm::dyn_cast<clang::InitListExpr>(I)) {
 						// If it's an InitListExpr like {'a','b','c'}, but with non-constant
 						// initializers, then split it up into x[0] = 'a'; x[1] = 'b'; and
 						// so forth, which would go in the function body, while making the
@@ -401,12 +401,12 @@ string Console::genAppendix(const char *source,
 	if (const clang::Stmt *S = locateStmt(line, &src)) {
 		if (_debugMode)
 			oprintf(_err, "Found Stmt for input.\n");
-		if (const clang::Expr *E = dyn_cast<clang::Expr>(S)) {
+		if (const clang::Expr *E = llvm::dyn_cast<clang::Expr>(S)) {
 			QT = E->getType();
 			funcBody = line;
 			moreLines->push_back(CodeLine(line, StmtLine));
 			wasExpr = true;
-		} else if (const clang::DeclStmt *DS = dyn_cast<clang::DeclStmt>(S)) {
+		} else if (const clang::DeclStmt *DS = llvm::dyn_cast<clang::DeclStmt>(S)) {
 			if (_debugMode)
 				oprintf(_err, "Processing DeclStmt.\n");
 			if (!handleDeclStmt(DS, src, &appendix, &funcBody, moreLines)) {
