@@ -7,7 +7,7 @@ if(NOT LLVM_CONFIG_EXECUTABLE)
   message(FATAL_ERROR "LLVM was not found!")
 endif(NOT LLVM_CONFIG_EXECUTABLE)
 
-exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs engine backend target linker bitreader bitwriter codegen mc mcdisassembler OUTPUT_VARIABLE LLVM_LIBS1)
+exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --libs engine backend target linker bitreader bitwriter codegen mc mcdisassembler x86 OUTPUT_VARIABLE LLVM_LIBS1)
 set(LLVM_LIBS "-ldl ${LLVM_LIBS1}")
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags OUTPUT_VARIABLE LLVM_LDFLAGS)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
