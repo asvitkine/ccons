@@ -302,6 +302,62 @@ void Console::printGV(const llvm::Function *F,
 	assert(0 && "Unknown return type!");
 }
 
+void Console::processVarDecl(const string& src,
+                             const clang::VarDecl *VD,
+                             std::vector<string> *decls,
+                             std::vector<string> *stmts,
+                             string *appendix)
+{
+	clang::SourceManager *sm = _parser->getLastParseOperation()->getSourceManager();
+	clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
+	clang::PrintingPolicy PP(_options);
+	PP.AnonymousTagLocations = false;
+	string decl = genVarDecl(PP, VD->getType(), VD->getName().str().c_str());
+	if (decl.find("struct <anonymous>", 0) == 0) {
+		SrcRange range = constructSrcRange(*sm, _options, VD->getLocStart(), VD->getLocEnd());
+		string orig = src.substr(range.first, range.second - range.first);
+		string::size_type assignIndex = orig.find("=");
+		if (assignIndex != string::npos) {
+			decl = orig.substr(0, assignIndex);
+		}
+	}
+	if (const clang::Expr *I = VD->getInit()) {
+		SrcRange range = getStmtRange(I, *sm, _options);
+		if (I->isConstantInitializer(*context, false)) {
+			// Keep the whole thing in the global context.
+			std::stringstream global;
+			global << decl << " = ";
+			global << src.substr(range.first, range.second - range.first);
+			*appendix += global.str() + ";\n";
+		} else if (const clang::InitListExpr *ILE = llvm::dyn_cast<clang::InitListExpr>(I)) {
+			// If it's an InitListExpr like {'a','b','c'}, but with non-constant
+			// initializers, then split it up into x[0] = 'a'; x[1] = 'b'; and
+			// so forth, which would go in the function body, while making the
+			// declaration global.
+			unsigned numInits = ILE->getNumInits();
+			for (unsigned i = 0; i < numInits; i++) {
+				std::stringstream stmt;
+				stmt << VD->getName().str().c_str() << "[" << i << "] = ";
+				range = getStmtRange(ILE->getInit(i), *sm, _options);
+				stmt << src.substr(range.first, range.second - range.first) << ";";
+				stmts->push_back(stmt.str());
+			}
+			*appendix += decl + ";\n";
+		} else {
+			std::stringstream stmt;
+			stmt << VD->getName().str().c_str() << " = "
+					 << src.substr(range.first, range.second - range.first) << ";";
+			stmts->push_back(stmt.str());
+			*appendix += decl + ";\n";
+		}
+	} else {
+		// Just add it as a definition without an initializer.
+		*appendix += decl + ";\n";
+	}
+	decls->push_back(decl + ";");
+}
+
+
 bool Console::handleDeclStmt(const clang::DeclStmt *DS,
                              const string& src,
                              string *appendix,
@@ -321,56 +377,10 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 	if (initializers) {
 		std::vector<string> decls;
 		std::vector<string> stmts;
-		clang::SourceManager *sm = _parser->getLastParseOperation()->getSourceManager();
-		clang::ASTContext *context = _parser->getLastParseOperation()->getASTContext();
-		clang::PrintingPolicy PP(_options);
-		PP.AnonymousTagLocations = false;
 		for (clang::DeclStmt::const_decl_iterator D = DS->decl_begin(),
 				 E = DS->decl_end(); D != E; ++D) {
 			if (const clang::VarDecl *VD = llvm::dyn_cast<clang::VarDecl>(*D)) {
-				string decl = genVarDecl(PP, VD->getType(), VD->getName().str().c_str());
-				if (decl.find("struct <anonymous>", 0) == 0) {
-					SrcRange range = constructSrcRange(*sm, _options, VD->getLocStart(), VD->getLocEnd());
-					string orig = src.substr(range.first, range.second - range.first);
-					string::size_type assignIndex = orig.find("=");
-					if (assignIndex != string::npos) {
-						decl = orig.substr(0, assignIndex);
-					}
-				}
-				if (const clang::Expr *I = VD->getInit()) {
-					SrcRange range = getStmtRange(I, *sm, _options);
-					if (I->isConstantInitializer(*context, false)) {
-						// Keep the whole thing in the global context.
-						std::stringstream global;
-						global << decl << " = ";
-						global << src.substr(range.first, range.second - range.first);
-						*appendix += global.str() + ";\n";
-					} else if (const clang::InitListExpr *ILE = llvm::dyn_cast<clang::InitListExpr>(I)) {
-						// If it's an InitListExpr like {'a','b','c'}, but with non-constant
-						// initializers, then split it up into x[0] = 'a'; x[1] = 'b'; and
-						// so forth, which would go in the function body, while making the
-						// declaration global.
-						unsigned numInits = ILE->getNumInits();
-						for (unsigned i = 0; i < numInits; i++) {
-							std::stringstream stmt;
-							stmt << VD->getName().str().c_str() << "[" << i << "] = ";
-							range = getStmtRange(ILE->getInit(i), *sm, _options);
-							stmt << src.substr(range.first, range.second - range.first) << ";";
-							stmts.push_back(stmt.str());
-						}
-						*appendix += decl + ";\n";
-					} else {
-						std::stringstream stmt;
-						stmt << VD->getName().str().c_str() << " = "
-						     << src.substr(range.first, range.second - range.first) << ";";
-						stmts.push_back(stmt.str());
-						*appendix += decl + ";\n";
-					}
-				} else {
-					// Just add it as a definition without an initializer.
-					*appendix += decl + ";\n";
-				}
-				decls.push_back(decl + ";");
+				processVarDecl(src, VD, &decls, &stmts, appendix);
 			}
 		}
 		for (unsigned i = 0; i < decls.size(); ++i)

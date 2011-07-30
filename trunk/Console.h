@@ -39,6 +39,7 @@ namespace clang {
 	class QualType;
 	class SourceManager;
 	class Stmt;
+	class VarDecl;
 } // namespace clang
 
 namespace ccons {
@@ -101,6 +102,11 @@ private:
 	void printGV(const llvm::Function *F,
 	             const llvm::GenericValue& GV,
 	             const clang::QualType& QT);
+	void processVarDecl(const std::string& src,
+	                    const clang::VarDecl *VD,
+	                    std::vector<std::string> *decls,
+	                    std::vector<std::string> *stmts,
+	                    std::string *appendix);
 	bool handleDeclStmt(const clang::DeclStmt *DS,
 	                    const std::string& src,
 	                    std::string *appendix,
