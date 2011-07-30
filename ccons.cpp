@@ -44,9 +44,6 @@ static llvm::cl::opt<bool>
 	MultiProcess("ccons-multi-process",
 			llvm::cl::desc("Run in multi-process mode"));
 
-static std::stringstream ss_out;
-static std::stringstream ss_err;
-
 static IConsole * createConsole()
 {
 	if (MultiProcess)
