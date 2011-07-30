@@ -314,6 +314,7 @@ bool Console::handleDeclStmt(const clang::DeclStmt *DS,
 		if (const clang::VarDecl *VD = llvm::dyn_cast<clang::VarDecl>(*D)) {
 			if (VD->getInit()) {
 				initializers = true;
+				break;
 			}
 		}
 	}
