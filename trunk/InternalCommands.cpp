@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include <llvm/ADT/StringRef.h>
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/Path.h>
 
