@@ -49,6 +49,7 @@ namespace ccons {
 ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::Diagnostic *diag,
                                clang::PPCallbacks *callbacks) :
+	_langOpts(options),
 	_fsOpts(new clang::FileSystemOptions),
 	_fm(new clang::FileManager(*_fsOpts)),
 	_sm(new clang::SourceManager(*diag, *_fm)),
@@ -63,18 +64,22 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
 	clang::HeaderSearchOptions hsOptions;
 	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
-	_pp.reset(new clang::Preprocessor(*diag, options, *_target, *_sm, *_hs));
+	_pp.reset(new clang::Preprocessor(*diag, _langOpts, &*_target, *_sm, *_hs, *this));
 	_pp->addPPCallbacks(callbacks);
 	clang::PreprocessorOptions ppOptions;
 	clang::FrontendOptions frontendOptions;
 	InitializePreprocessor(*_pp, ppOptions, hsOptions, frontendOptions);
-	_ast.reset(new clang::ASTContext(options,
+	_ast.reset(new clang::ASTContext(_langOpts,
 	                                 *_sm,
-	                                 *_target,
+	                                 &*_target,
 	                                 _pp->getIdentifierTable(),
 	                                 _pp->getSelectorTable(),
 	                                 _pp->getBuiltinInfo(),
 	                                 0));
+}
+
+ParseOperation::~ParseOperation()
+{
 }
 
 clang::ASTContext * ParseOperation::getASTContext() const
@@ -97,12 +102,17 @@ clang::TargetInfo * ParseOperation::getTargetInfo() const
 	return _target.get();
 }
 
+clang::ModuleKey ParseOperation::loadModule(clang::SourceLocation, 
+                                            clang::IdentifierInfo&,
+                                            clang::SourceLocation)
+{
+	return 0;
+}
+
 
 //
 // Parser
 //
-
-
 
 Parser::Parser(const clang::LangOptions& options) :
 	_options(options)

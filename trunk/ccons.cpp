@@ -62,6 +62,8 @@ static LineReader * createReader()
 		return new EditLineReader;
 }
 
+extern "C" void LLVMInitializeX86TargetMC();
+
 int main(const int argc, char **argv)
 {
 	llvm::cl::SetVersionPrinter(ccons::PrintVersionInformation);
@@ -74,6 +76,9 @@ int main(const int argc, char **argv)
 	}
 
 	llvm::InitializeNativeTarget();
+
+	// FIXME: This shouldn't be needed - it should have been done by llvm::InitializeNativeTarget().
+	LLVMInitializeX86TargetMC();
 
 	llvm::OwningPtr<IConsole> console(createConsole());
 	llvm::OwningPtr<LineReader> reader(createReader());
