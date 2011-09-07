@@ -20,6 +20,7 @@
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/FileManager.h>
 #include <clang/Lex/HeaderSearch.h>
+#include <clang/Lex/ModuleLoader.h>
 
 namespace clang {
 	class ASTConsumer;
@@ -41,21 +42,27 @@ namespace ccons {
 // ParseOperation
 // 
 
-class ParseOperation {
+class ParseOperation : public clang::ModuleLoader {
 
 public:
 	
 	ParseOperation(const clang::LangOptions& options,
 	               clang::Diagnostic *diag,
 	               clang::PPCallbacks *callbacks = 0);
+	virtual ~ParseOperation();
 
 	clang::ASTContext * getASTContext() const;
 	clang::Preprocessor * getPreprocessor() const;
 	clang::SourceManager * getSourceManager() const;
 	clang::TargetInfo * getTargetInfo() const;
 
+	virtual clang::ModuleKey loadModule(clang::SourceLocation, 
+                                      clang::IdentifierInfo&,
+                                      clang::SourceLocation);
+
 private:
 
+	clang::LangOptions _langOpts;
 	llvm::OwningPtr<clang::FileSystemOptions> _fsOpts;
 	llvm::OwningPtr<clang::FileManager> _fm;
 	llvm::OwningPtr<clang::SourceManager> _sm;
