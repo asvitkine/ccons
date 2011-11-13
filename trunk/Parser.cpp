@@ -47,20 +47,20 @@ namespace ccons {
 //
 
 ParseOperation::ParseOperation(const clang::LangOptions& options,
-                               clang::Diagnostic *diag,
+                               clang::DiagnosticsEngine *diag,
                                clang::PPCallbacks *callbacks) :
 	_langOpts(options),
 	_fsOpts(new clang::FileSystemOptions),
 	_fm(new clang::FileManager(*_fsOpts)),
 	_sm(new clang::SourceManager(*diag, *_fm)),
-	_hs(new clang::HeaderSearch(*_fm))
+	_hs(new clang::HeaderSearch(*_fm, *diag))
 {
-	llvm::Triple triple(LLVM_HOSTTRIPLE);
+	llvm::Triple triple(LLVM_DEFAULT_TARGET_TRIPLE);
 	clang::TargetOptions targetOptions;
 	targetOptions.ABI = "";
 	targetOptions.CPU = "";
 	targetOptions.Features.clear();
-	targetOptions.Triple = LLVM_HOSTTRIPLE;
+	targetOptions.Triple = LLVM_DEFAULT_TARGET_TRIPLE;
 	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
 	clang::HeaderSearchOptions hsOptions;
 	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
@@ -151,7 +151,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 
 	NullDiagnosticProvider ndp;
 	llvm::OwningPtr<ParseOperation>
-		parseOp(new ParseOperation(_options, ndp.getDiagnostic()));
+		parseOp(new ParseOperation(_options, ndp.getDiagnosticsEngine()));
 	llvm::MemoryBuffer *memBuf =
 		createMemoryBuffer(buffer, "", parseOp->getSourceManager());
 
@@ -166,11 +166,11 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (stackSize > 0) return Incomplete;
 		NullDiagnosticProvider ndp;
-		clang::Diagnostic& diag = *ndp.getDiagnostic();
+		clang::DiagnosticsEngine& engine = *ndp.getDiagnosticsEngine();
 		// Setting this ensures "foo();" is not a valid top-level declaration.
-		diag.setDiagnosticMapping(clang::diag::ext_missing_type_specifier,
+		engine.setDiagnosticMapping(clang::diag::ext_missing_type_specifier,
 		                          clang::diag::MAP_ERROR, clang::SourceLocation());
-		diag.setSuppressSystemWarnings(true);
+		engine.setSuppressSystemWarnings(true);
 		string src = contextSource + buffer;
 		struct : public clang::ASTConsumer {
 			bool hadIncludedDecls;
@@ -206,13 +206,13 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 				}
 			}
 		} consumer;
-		ParseOperation *parseOp = createParseOperation(&diag);
+		ParseOperation *parseOp = createParseOperation(&engine);
 		consumer.hadIncludedDecls = false;
 		consumer.pos = contextSource.length();
 		consumer.maxPos = consumer.pos + buffer.length();
 		consumer.sm = parseOp->getSourceManager();
 		parse(src, parseOp, &consumer);
-		ProxyDiagnosticClient *pdc = ndp.getProxyDiagnosticClient();
+		ProxyDiagnosticConsumer *pdc = ndp.getProxyDiagnosticConsumer();
 		if (pdc->hadError(clang::diag::err_unterminated_block_comment))
 			return Incomplete;
 		if (!pdc->hadErrors() && (!consumer.fds.empty() || consumer.hadIncludedDecls)) {
@@ -325,10 +325,10 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 	return result;
 }
 
-ParseOperation * Parser::createParseOperation(clang::Diagnostic *diag,
+ParseOperation * Parser::createParseOperation(clang::DiagnosticsEngine *engine,
                                               clang::PPCallbacks *callbacks)
 {
-	return new ParseOperation(_options, diag, callbacks);
+	return new ParseOperation(_options, engine, callbacks);
 }
 
 void Parser::parse(const string& src,
@@ -343,10 +343,10 @@ void Parser::parse(const string& src,
 
 
 void Parser::parse(const string& src,
-                   clang::Diagnostic *diag,
+                   clang::DiagnosticsEngine *engine,
                    clang::ASTConsumer *consumer)
 {
-	parse(src, createParseOperation(diag), consumer);
+	parse(src, createParseOperation(engine), consumer);
 }
 
 

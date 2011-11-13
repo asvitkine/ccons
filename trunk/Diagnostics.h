@@ -33,14 +33,14 @@ public:
 
 	explicit DiagnosticsProvider(llvm::raw_os_ostream& out);
 
-	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
-	                      const clang::DiagnosticInfo &Info);
+	void HandleDiagnostic(clang::DiagnosticsEngine::Level DiagLevel,
+	                      const clang::Diagnostic& Info);
 
 	void BeginSourceFile(const clang::LangOptions& opts, const clang::Preprocessor *pp);
 
 	void setOffset(unsigned offset);
 
-	clang::Diagnostic * getDiagnostic();
+	clang::DiagnosticsEngine * getDiagnosticsEngine();
 
 private:
 
@@ -48,32 +48,33 @@ private:
 	clang::DiagnosticOptions _dop;
 	clang::TextDiagnosticPrinter _tdp;
 	llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> _diagIDs;
-	clang::Diagnostic _diag;
+	clang::DiagnosticsEngine _engine;
 	std::set<std::pair<clang::diag::kind, unsigned> > _memory;
 
 };
 
 
 //
-// ProxyDiagnosticClient can act as a proxy to another diagnostic client.
+// ProxyDiagnosticConsumer can act as a proxy to another diagnostic client.
 //
 
-class ProxyDiagnosticClient : public clang::DiagnosticClient {
+class ProxyDiagnosticConsumer : public clang::DiagnosticConsumer {
 
 public:
 
-	explicit ProxyDiagnosticClient(clang::DiagnosticClient *DC);
+	explicit ProxyDiagnosticConsumer(clang::DiagnosticConsumer *DC);
 
-	void HandleDiagnostic(clang::Diagnostic::Level DiagLevel,
-	                      const clang::DiagnosticInfo &Info);
+	void HandleDiagnostic(clang::DiagnosticsEngine::Level DiagLevel,
+	                      const clang::Diagnostic& Info);
 
 	bool hadError(clang::diag::kind Kind) const;
 	bool hadErrors() const;
+	clang::DiagnosticConsumer * clone(clang::DiagnosticsEngine& Diags) const;
 
 private:
 
-	clang::DiagnosticClient *_DC;
-	std::multimap<clang::diag::kind, const clang::DiagnosticInfo> _errors;
+	clang::DiagnosticConsumer *_DC;
+	std::multimap<clang::diag::kind, const clang::Diagnostic> _errors;
 
 };
 
@@ -87,14 +88,14 @@ public:
 
 	NullDiagnosticProvider();
 
-	clang::Diagnostic * getDiagnostic();
-	ProxyDiagnosticClient * getProxyDiagnosticClient();
+	clang::DiagnosticsEngine * getDiagnosticsEngine();
+	ProxyDiagnosticConsumer * getProxyDiagnosticConsumer();
 
 private:
 
-	ProxyDiagnosticClient *_pdc; // owner by _diagnostic
+	ProxyDiagnosticConsumer *_pdc; // owned by _engine
 	llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> _diagnosticIDs;
-	clang::Diagnostic _diagnostic;
+	clang::DiagnosticsEngine _engine;
 
 };
 
