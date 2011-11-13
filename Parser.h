@@ -25,7 +25,7 @@
 namespace clang {
 	class ASTConsumer;
 	class ASTContext;
-	class Diagnostic;
+	class DiagnosticsEngine;
 	class FileSystemOptions;
 	class FunctionDecl;
 	class Preprocessor;
@@ -47,7 +47,7 @@ class ParseOperation : public clang::ModuleLoader {
 public:
 	
 	ParseOperation(const clang::LangOptions& options,
-	               clang::Diagnostic *diag,
+	               clang::DiagnosticsEngine *engine,
 	               clang::PPCallbacks *callbacks = 0);
 	virtual ~ParseOperation();
 
@@ -95,7 +95,7 @@ public:
 
 	// Create a new ParseOperation that the caller should take ownership of
 	// and the lifetime of which must be shorter than of the Parser.
-	ParseOperation * createParseOperation(clang::Diagnostic *diag,
+	ParseOperation * createParseOperation(clang::DiagnosticsEngine *engine,
 	                                      clang::PPCallbacks *callbacks = 0);
 
 	// Parse the specified source code with the specified parse operation
@@ -103,12 +103,12 @@ public:
 	// the Parser permanently.
 	void parse(const std::string& src,
 	           ParseOperation *parseOp,
-               clang::ASTConsumer *consumer);
+	           clang::ASTConsumer *consumer);
 
 	// Parse by implicitely creating a ParseOperation. Equivalent to
 	// parse(src, createParseOperation(diag), consumer).
 	void parse(const std::string& src,
-	           clang::Diagnostic *diag,
+	           clang::DiagnosticsEngine *engine,
 	           clang::ASTConsumer *consumer);
 
 	// Returns the last parse operation or NULL if there isn't one.

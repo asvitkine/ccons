@@ -169,7 +169,7 @@ int Console::splitInput(const string& source,
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
 	std::vector<clang::Stmt*> stmts;
-	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
+	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnosticsEngine());
 	_dp->BeginSourceFile(_options, parseOp->getPreprocessor());
 	clang::SourceManager *sm = parseOp->getSourceManager();
 	StmtSplitter splitter(src, *sm, _options, &stmts);
@@ -179,7 +179,7 @@ int Console::splitInput(const string& source,
 	_parser->parse(src, parseOp, &consumer);
 
 	statements->clear();
-	if (_dp->getDiagnostic()->hasErrorOccurred()) {
+	if (_dp->getDiagnosticsEngine()->hasErrorOccurred()) {
 		reportInputError();
 		return 0;
 	} else if (stmts.size() == 1) {
@@ -207,7 +207,7 @@ clang::Stmt * Console::locateStmt(const std::string& line,
 
 	// Set offset on the diagnostics provider.
 	_dp->setOffset(pos);
-	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnostic());
+	ParseOperation *parseOp = _parser->createParseOperation(_dp->getDiagnosticsEngine());
 	_dp->BeginSourceFile(_options, parseOp->getPreprocessor());
 	clang::SourceManager& sm = *parseOp->getSourceManager();
 	StmtFinder finder(pos, sm);
@@ -216,7 +216,7 @@ clang::Stmt * Console::locateStmt(const std::string& line,
 		oprintf(_err, "Parsing in locateStmt()...\n");
 	_parser->parse(*src, parseOp, &consumer);
 
-	if (_dp->getDiagnostic()->hasErrorOccurred()) {
+	if (_dp->getDiagnosticsEngine()->hasErrorOccurred()) {
 		src->clear();
 		return NULL;
 	}
@@ -566,16 +566,16 @@ bool Console::compileLinkAndRun(const string& src,
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CodeGenOptions codeGenOptions;
 	codeGenOptions.InstrumentFunctions = false;
-	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnostic(), "-", codeGenOptions, _context));
+	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnosticsEngine(), "-", codeGenOptions, _context));
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
 	_macros = new MacroDetector(_options);
 	ParseOperation *parseOp =
-	  _parser->createParseOperation(_dp->getDiagnostic(), _macros);
+	  _parser->createParseOperation(_dp->getDiagnosticsEngine(), _macros);
 	_dp->BeginSourceFile(_options, parseOp->getPreprocessor());
 	_macros->setSourceManager(parseOp->getSourceManager());
 	_parser->parse(src, parseOp, codegen.get());
-	if (_dp->getDiagnostic()->hasErrorOccurred()) {
+	if (_dp->getDiagnosticsEngine()->hasErrorOccurred()) {
 		reportInputError();
 		return false;
 	}
