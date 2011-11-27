@@ -86,7 +86,7 @@ public:
 		: _SV(SV), _funcName(funcName) {}
 	~FunctionBodyConsumer<T>() {}
 
-	void HandleTopLevelDecl(clang::DeclGroupRef D) {
+	bool HandleTopLevelDecl(clang::DeclGroupRef D) {
 		for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
 			if (clang::FunctionDecl *FD = llvm::dyn_cast<clang::FunctionDecl>(*I)) {
 				if (FD->getName().str() == _funcName) {
@@ -96,6 +96,7 @@ public:
 				}
 			}
 		}
+		return true;
 	}
 
 };

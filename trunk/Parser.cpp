@@ -178,7 +178,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 			unsigned maxPos;
 			clang::SourceManager *sm;
 			std::vector<clang::FunctionDecl*> fds;
-			void HandleTopLevelDecl(clang::DeclGroupRef D) {
+			bool HandleTopLevelDecl(clang::DeclGroupRef D) {
 				for (clang::DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I) {
 					if (clang::FunctionDecl *FD = llvm::dyn_cast<clang::FunctionDecl>(*I)) {
 						clang::SourceLocation Loc = FD->getTypeSpecStartLoc();
@@ -204,6 +204,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 						}
 					}
 				}
+				return true;
 			}
 		} consumer;
 		ParseOperation *parseOp = createParseOperation(&engine);
