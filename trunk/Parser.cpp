@@ -52,8 +52,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_langOpts(options),
 	_fsOpts(new clang::FileSystemOptions),
 	_fm(new clang::FileManager(*_fsOpts)),
-	_sm(new clang::SourceManager(*diag, *_fm)),
-	_hs(new clang::HeaderSearch(*_fm, *diag))
+	_sm(new clang::SourceManager(*diag, *_fm))
 {
 	llvm::Triple triple(LLVM_DEFAULT_TARGET_TRIPLE);
 	clang::TargetOptions targetOptions;
@@ -62,6 +61,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	targetOptions.Features.clear();
 	targetOptions.Triple = LLVM_DEFAULT_TARGET_TRIPLE;
 	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
+	_hs.reset(new clang::HeaderSearch(*_fm, *diag, options, &*_target));
 	clang::HeaderSearchOptions hsOptions;
 	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
 	_pp.reset(new clang::Preprocessor(*diag, _langOpts, &*_target, *_sm, *_hs, *this));
@@ -102,9 +102,10 @@ clang::TargetInfo * ParseOperation::getTargetInfo() const
 	return _target.get();
 }
 
-clang::ModuleKey ParseOperation::loadModule(clang::SourceLocation, 
-                                            clang::IdentifierInfo&,
-                                            clang::SourceLocation)
+clang::Module * ParseOperation::loadModule(clang::SourceLocation ImportLoc,
+                                           clang::ModuleIdPath Path,
+                                           clang::Module::NameVisibilityKind Visibility,
+                                           bool IsInclusionDirective)
 {
 	return 0;
 }
