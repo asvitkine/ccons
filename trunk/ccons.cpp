@@ -15,7 +15,7 @@
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Signals.h>
-#include <llvm/Target/TargetSelect.h>
+#include <llvm-c/Target.h>
 
 #include "Console.h"
 #include "EditLineReader.h"
@@ -75,7 +75,7 @@ int main(const int argc, char **argv)
 		llvm::sys::PrintStackTraceOnErrorSignal();
 	}
 
-	llvm::InitializeNativeTarget();
+	LLVMInitializeNativeTarget();
 
 	// FIXME: This shouldn't be needed - it should have been done by llvm::InitializeNativeTarget().
 	// TODO: Bisect builds and report a bug to LLVM if this doesn't disappear soon. I noticed the breakage at r139193 of LLVM.
