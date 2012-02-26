@@ -77,10 +77,6 @@ int main(const int argc, char **argv)
 
 	LLVMInitializeNativeTarget();
 
-	// FIXME: This shouldn't be needed - it should have been done by llvm::InitializeNativeTarget().
-	// TODO: Bisect builds and report a bug to LLVM if this doesn't disappear soon. I noticed the breakage at r139193 of LLVM.
-	LLVMInitializeX86TargetMC();
-
 	llvm::OwningPtr<IConsole> console(createConsole());
 	llvm::OwningPtr<LineReader> reader(createReader());
 
