@@ -298,7 +298,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 		clang::Lexer Lexer(PP.getSourceManager().getMainFileID(),
 		                   MemBuf,
 		                   PP.getSourceManager(),
-		                   PP.getLangOptions());
+		                   _options);
 		Lexer.LexFromRawLexer(Tok);
 		while (Tok.isNot(clang::tok::eof)) {
 			if (Tok.is(clang::tok::hash)) {
