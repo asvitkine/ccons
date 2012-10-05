@@ -78,7 +78,8 @@ const char * EditLineReader::readLine(const char *prompt, const char *input)
 
 	el_push(_editLine, input);
 
-	const char *line = el_gets(_editLine, NULL);
+	int n;
+	const char *line = el_gets(_editLine, &n);
 
 	if (line)
 		history(_history, &_event, H_ENTER, line);
