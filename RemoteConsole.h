@@ -30,7 +30,7 @@ class RemoteConsole : public IConsole {
 
 public:
 
-	explicit RemoteConsole(bool DebugMode);
+	RemoteConsole(const char * command, bool DebugMode);
 	virtual ~RemoteConsole();
 
 	const char * prompt() const;
@@ -39,6 +39,7 @@ public:
 
 private:
 
+	std::string _command;
 	bool _DebugMode;
 	FILE *_ostream;
 	FILE *_istream;
