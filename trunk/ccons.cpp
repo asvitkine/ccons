@@ -44,10 +44,10 @@ static llvm::cl::opt<bool>
 	MultiProcess("ccons-multi-process",
 			llvm::cl::desc("Run in multi-process mode"));
 
-static IConsole * createConsole()
+static IConsole * createConsole(const char * command)
 {
 	if (MultiProcess)
-		return new RemoteConsole(DebugMode);
+		return new RemoteConsole(command, DebugMode);
 	else if (SerializedOutput)
 		return new SerializedOutputConsole(DebugMode);		
 	else
@@ -77,7 +77,7 @@ int main(const int argc, char **argv)
 
 	LLVMInitializeNativeTarget();
 
-	llvm::OwningPtr<IConsole> console(createConsole());
+	llvm::OwningPtr<IConsole> console(createConsole(argv[0]));
 	llvm::OwningPtr<LineReader> reader(createReader());
 
 	const char *line = reader->readLine(console->prompt(), console->input());
