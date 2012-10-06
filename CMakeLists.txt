@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 
-find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config PATHS ../../Debug+Asserts/bin/ NO_DEFAULT_PATH)
+set(LLVM_BUILD_TYPE "Debug+Asserts")
+
+find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config PATHS ../../${LLVM_BUILD_TYPE}/ NO_DEFAULT_PATH)
 find_program(LLVM_CONFIG_EXECUTABLE llvm-config)
 
 if(NOT LLVM_CONFIG_EXECUTABLE)
@@ -12,7 +14,7 @@ exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --ldflags OUTPUT_VARIABLE LLVM_LDFLA
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cflags OUTPUT_VARIABLE LLVM_C_FLAGS)
 exec_program(${LLVM_CONFIG_EXECUTABLE} ARGS --cxxflags OUTPUT_VARIABLE LLVM_CXX_FLAGS)
-set(CLANG_LIBS "-L../../Debug+Asserts/lib -lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic -lclangAnalysis -lclangEdit")
+set(CLANG_LIBS "-L../../${LLVM_BUILD_TYPE}/lib -lclangFrontend -lclangAST -lclangLex -lclangCodeGen -lclangSema -lclangParse -lclangAST -lclangBasic -lclangAnalysis -lclangEdit")
 
 Project(ccons)
 
