@@ -14,8 +14,8 @@
 #include <string>
 
 namespace clang {
+	struct PrintingPolicy;
 	class ASTContext;
-	class PrintingPolicy;
 	class QualType;
 	class FunctionDecl;
 } // namespace clang
