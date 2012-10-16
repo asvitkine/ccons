@@ -26,9 +26,9 @@
 #include <clang/Basic/LangOptions.h>
 
 namespace llvm {
+	struct GenericValue;
 	class ExecutionEngine;
 	class Function;
-	class GenericValue;
 	class Linker;
 } // namespace llvm
 
