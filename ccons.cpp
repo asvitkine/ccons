@@ -67,8 +67,7 @@ extern "C" void LLVMInitializeX86TargetMC();
 int main(const int argc, char **argv)
 {
 	llvm::cl::SetVersionPrinter(ccons::PrintVersionInformation);
-	llvm::cl::ParseCommandLineOptions(argc, argv, "ccons Interactive C Console\n",
-	                                  false/*, "ccons-"*/);
+	llvm::cl::ParseCommandLineOptions(argc, argv);
 
 	if (DebugMode && !SerializedOutput) {
 		std::cerr << "NOTE: Debugging information will be displayed.\n";
