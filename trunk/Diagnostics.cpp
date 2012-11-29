@@ -51,12 +51,13 @@ namespace {
 }
 
 DiagnosticsProvider::DiagnosticsProvider(llvm::raw_os_ostream& out)
-	: _tdp(out, _dop)
+	: _dop(new clang::DiagnosticOptions)
+	, _tdp(out, &*_dop)
 	, _diagIDs(new clang::DiagnosticIDs())
-	, _engine(_diagIDs, new DiagnosticsProviderConsumer(this))
+	, _engine(_diagIDs, &*_dop, new DiagnosticsProviderConsumer(this))
 {
-	_dop.ShowColumn = 0;
-	_dop.ShowSourceRanges = 1;
+	_dop->ShowColumn = 0;
+	_dop->ShowSourceRanges = 1;
 	_engine.setDiagnosticMapping((clang::diag::kind)clang::diag::ext_implicit_function_decl,
 	                             clang::diag::MAP_ERROR, clang::SourceLocation());
 	_engine.setDiagnosticMapping((clang::diag::kind)clang::diag::warn_unused_expr,
@@ -135,8 +136,9 @@ clang::DiagnosticConsumer * ProxyDiagnosticConsumer::clone(clang::DiagnosticsEng
 //
 
 NullDiagnosticProvider::NullDiagnosticProvider()
-	: _diagnosticIDs(new clang::DiagnosticIDs())
-	, _engine(_diagnosticIDs, _pdc = new ProxyDiagnosticConsumer(NULL))
+	: _dop(new clang::DiagnosticOptions)
+	, _diagnosticIDs(new clang::DiagnosticIDs())
+	, _engine(_diagnosticIDs, &*_dop, _pdc = new ProxyDiagnosticConsumer(NULL))
 {
 }
 

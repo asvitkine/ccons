@@ -22,8 +22,6 @@
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Frontend/FrontendOptions.h>
-#include <clang/Frontend/HeaderSearchOptions.h>
-#include <clang/Frontend/PreprocessorOptions.h>
 #include <clang/Frontend/Utils.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/LexDiagnostic.h>
@@ -50,25 +48,25 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
                                clang::DiagnosticsEngine *diag,
                                clang::PPCallbacks *callbacks) :
 	_langOpts(options),
+	_targetOptions(new clang::TargetOptions),
+	_hsOptions(new clang::HeaderSearchOptions),
+	_ppOptions(new clang::PreprocessorOptions),
 	_fsOpts(new clang::FileSystemOptions),
 	_fm(new clang::FileManager(*_fsOpts)),
 	_sm(new clang::SourceManager(*diag, *_fm))
 {
 	llvm::Triple triple(LLVM_DEFAULT_TARGET_TRIPLE);
-	clang::TargetOptions targetOptions;
-	targetOptions.ABI = "";
-	targetOptions.CPU = "";
-	targetOptions.Features.clear();
-	targetOptions.Triple = LLVM_DEFAULT_TARGET_TRIPLE;
-	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
-	_hs.reset(new clang::HeaderSearch(*_fm, *diag, options, &*_target));
-	clang::HeaderSearchOptions hsOptions;
-	ApplyHeaderSearchOptions(*_hs, hsOptions, options, triple);
-	_pp.reset(new clang::Preprocessor(*diag, _langOpts, &*_target, *_sm, *_hs, *this));
+	_targetOptions->ABI = "";
+	_targetOptions->CPU = "";
+	_targetOptions->Features.clear();
+	_targetOptions->Triple = LLVM_DEFAULT_TARGET_TRIPLE;
+	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, &*_targetOptions));
+	_hs.reset(new clang::HeaderSearch(_hsOptions, *_fm, *diag, options, &*_target));
+	ApplyHeaderSearchOptions(*_hs, *_hsOptions, options, triple);
+	_pp.reset(new clang::Preprocessor(_ppOptions, *diag, _langOpts, &*_target, *_sm, *_hs, *this));
 	_pp->addPPCallbacks(callbacks);
-	clang::PreprocessorOptions ppOptions;
 	clang::FrontendOptions frontendOptions;
-	InitializePreprocessor(*_pp, ppOptions, hsOptions, frontendOptions);
+	InitializePreprocessor(*_pp, *_ppOptions, *_hsOptions, frontendOptions);
 	_ast.reset(new clang::ASTContext(_langOpts,
 	                                 *_sm,
 	                                 &*_target,

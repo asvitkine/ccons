@@ -17,7 +17,6 @@
 
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/Diagnostic.h>
-#include <clang/Frontend/DiagnosticOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 
 namespace ccons {
@@ -45,7 +44,7 @@ public:
 private:
 
 	unsigned _offs;
-	clang::DiagnosticOptions _dop;
+	llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> _dop;
 	clang::TextDiagnosticPrinter _tdp;
 	llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> _diagIDs;
 	clang::DiagnosticsEngine _engine;
@@ -93,6 +92,7 @@ public:
 
 private:
 
+	llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> _dop;
 	ProxyDiagnosticConsumer *_pdc; // owned by _engine
 	llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> _diagnosticIDs;
 	clang::DiagnosticsEngine _engine;

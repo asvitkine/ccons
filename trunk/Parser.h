@@ -17,8 +17,11 @@
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/Support/MemoryBuffer.h>
 
-#include <clang/Basic/LangOptions.h>
 #include <clang/Basic/FileManager.h>
+#include <clang/Basic/LangOptions.h>
+#include <clang/Basic/TargetOptions.h>
+#include <clang/Lex/HeaderSearchOptions.h>
+#include <clang/Lex/PreprocessorOptions.h>
 #include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/ModuleLoader.h>
 
@@ -64,6 +67,9 @@ public:
 private:
 
 	clang::LangOptions _langOpts;
+	llvm::IntrusiveRefCntPtr<clang::TargetOptions> _targetOptions;
+	llvm::IntrusiveRefCntPtr<clang::HeaderSearchOptions> _hsOptions;
+	llvm::IntrusiveRefCntPtr<clang::PreprocessorOptions> _ppOptions;
 	llvm::OwningPtr<clang::FileSystemOptions> _fsOpts;
 	llvm::OwningPtr<clang::FileManager> _fm;
 	llvm::OwningPtr<clang::SourceManager> _sm;
