@@ -100,12 +100,12 @@ clang::TargetInfo * ParseOperation::getTargetInfo() const
 	return _target.get();
 }
 
-clang::Module * ParseOperation::loadModule(clang::SourceLocation ImportLoc,
-                                           clang::ModuleIdPath Path,
-                                           clang::Module::NameVisibilityKind Visibility,
-                                           bool IsInclusionDirective)
+clang::ModuleLoadResult ParseOperation::loadModule(clang::SourceLocation ImportLoc,
+                                                   clang::ModuleIdPath Path,
+                                                   clang::Module::NameVisibilityKind Visibility,
+																									 bool IsInclusionDirective)
 {
-	return 0;
+	return clang::ModuleLoadResult();
 }
 
 

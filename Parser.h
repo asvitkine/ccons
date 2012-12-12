@@ -59,10 +59,10 @@ public:
 	clang::SourceManager * getSourceManager() const;
 	clang::TargetInfo * getTargetInfo() const;
 
-	virtual clang::Module * loadModule(clang::SourceLocation ImportLoc,
-	                                   clang::ModuleIdPath Path,
-	                                   clang::Module::NameVisibilityKind Visibility,
-	                                   bool IsInclusionDirective);
+	virtual clang::ModuleLoadResult loadModule(clang::SourceLocation ImportLoc,
+	                                           clang::ModuleIdPath Path,
+	                                           clang::Module::NameVisibilityKind Visibility,
+	                                           bool IsInclusionDirective);
 
 private:
 
