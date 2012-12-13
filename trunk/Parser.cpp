@@ -155,10 +155,11 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 		createMemoryBuffer(buffer, "", parseOp->getSourceManager());
 
 	clang::Token LastTok;
+	LastTok.startToken();
 	bool TokWasDo = false;
 	int stackSize =
 		analyzeTokens(*parseOp->getPreprocessor(), memBuf, LastTok, indentLevel, TokWasDo);
-	if (stackSize < 0)
+	if (stackSize < 0 || LastTok.is(clang::tok::unknown))
 		return TopLevel;
 
 	// TokWasDo is used for do { ... } while (...); loops
