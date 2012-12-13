@@ -113,6 +113,7 @@ Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 	_tempFile(NULL)
 {
 	_options.C99 = true;
+	_options.ImplicitInt = false;
 	_parser.reset(new Parser(_options));
 	// Declare exit() so users may call it without needing to #include <stdio.h>
 	_lines.push_back(CodeLine("void exit(int status);", DeclLine));
