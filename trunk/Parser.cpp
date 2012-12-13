@@ -159,11 +159,13 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 	bool TokWasDo = false;
 	int stackSize =
 		analyzeTokens(*parseOp->getPreprocessor(), memBuf, LastTok, indentLevel, TokWasDo);
-	if (stackSize < 0 || (!stackSize && LastTok.is(clang::tok::unknown)))
+	if (stackSize < 0)
 		return TopLevel;
 
 	// TokWasDo is used for do { ... } while (...); loops
-	if (LastTok.is(clang::tok::semi) || (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
+	if (LastTok.is(clang::tok::semi) ||
+	    (!stackSize && LastTok.is(clang::tok::unknown)) ||
+	    (LastTok.is(clang::tok::r_brace) && !TokWasDo)) {
 		if (stackSize > 0) return Incomplete;
 		NullDiagnosticProvider ndp;
 		clang::DiagnosticsEngine& engine = *ndp.getDiagnosticsEngine();
