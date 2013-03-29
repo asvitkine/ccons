@@ -10,7 +10,7 @@
 #include "StringUtils.h"
 
 #include <stdlib.h>
-#include <stdarg.h>
+#include <stdio.h>
 
 namespace ccons {
 
