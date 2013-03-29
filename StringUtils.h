@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <stdarg.h>
 
 namespace ccons {
 
