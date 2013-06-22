@@ -19,9 +19,9 @@
 #include <vector>
 #include <algorithm>
 
-#include <llvm/LLVMContext.h>
-#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/ADT/OwningPtr.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/raw_os_ostream.h>
 
 #include <clang/Basic/LangOptions.h>
 

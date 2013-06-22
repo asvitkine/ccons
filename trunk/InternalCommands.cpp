@@ -14,7 +14,7 @@
 
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/DynamicLibrary.h>
-#include <llvm/Support/Path.h>
+#include <llvm/Support/PathV1.h>
 
 namespace ccons {
 
