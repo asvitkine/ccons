@@ -12,6 +12,7 @@
 
 #include <errno.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #include <iostream>
 #include <map>
