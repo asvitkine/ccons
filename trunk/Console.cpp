@@ -65,7 +65,7 @@ public:
 	void MacroDefined(const clang::Token& token,
 	                  const clang::MacroDirective* MD) {
 		const clang::MacroInfo* MI = MD->getMacroInfo();
-		if (MI->isBuiltinMacro())
+		if (!MI || MI->isBuiltinMacro())
 			return;
 		clang::FileID mainFileID = _sm->getMainFileID();
 		if (_sm->getFileID(MI->getDefinitionLoc()) == mainFileID) {
@@ -79,7 +79,7 @@ public:
 	void MacroUndefined(const clang::Token& token,
 	                    const clang::MacroDirective* MD) {
 		const clang::MacroInfo* MI = MD->getMacroInfo();
-		if (MI->isBuiltinMacro())
+		if (!MI || MI->isBuiltinMacro())
 			return;
 		clang::FileID mainFileID = _sm->getMainFileID();
 		if (_sm->getFileID(MI->getDefinitionLoc()) == mainFileID) {
