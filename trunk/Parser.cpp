@@ -60,7 +60,8 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_targetOptions->CPU = "";
 	_targetOptions->Features.clear();
 	_targetOptions->Triple = LLVM_DEFAULT_TARGET_TRIPLE;
-	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, *_targetOptions));
+	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, &*_targetOptions));
+
 	_hs.reset(new clang::HeaderSearch(_hsOptions, *_fm, *diag, options, &*_target));
 	ApplyHeaderSearchOptions(*_hs, *_hsOptions, options, triple);
 	_pp.reset(new clang::Preprocessor(_ppOptions, *diag, _langOpts, &*_target, *_sm, *_hs, *this));
@@ -100,14 +101,19 @@ clang::TargetInfo * ParseOperation::getTargetInfo() const
 	return _target.get();
 }
 
-clang::Module * ParseOperation::loadModule(clang::SourceLocation ImportLoc,
+clang::ModuleLoadResult ParseOperation::loadModule(clang::SourceLocation ImportLoc,
                                                    clang::ModuleIdPath Path,
                                                    clang::Module::NameVisibilityKind Visibility,
-																									 bool IsInclusionDirective)
+                                                   bool IsInclusionDirective)
 {
-	return NULL;
+	return clang::ModuleLoadResult();
 }
 
+void ParseOperation::makeModuleVisible(clang::Module *Mod,
+                                       clang::Module::NameVisibilityKind Visibility,
+                                       clang::SourceLocation ImportLoc,
+                                       bool Complain) {
+}
 
 //
 // Parser
