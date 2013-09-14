@@ -21,11 +21,11 @@
 #include <llvm/ADT/OwningPtr.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Linker.h>
-#include <llvm/Module.h>
-#include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/DerivedTypes.h>
 
 #include <clang/AST/AST.h>
 #include <clang/Basic/LangOptions.h>
@@ -121,8 +121,6 @@ Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 
 Console::~Console()
 {
-	if (_linker)
-		_linker->releaseModule();
 }
 
 const char * Console::prompt() const
@@ -583,10 +581,12 @@ bool Console::compileLinkAndRun(const string& src,
 
 	llvm::Module *module = codegen->ReleaseModule();
 	if (module) {
-		if (!_linker)
-			_linker.reset(new llvm::Linker("ccons", "ccons", _context));
+		if (!_linker) {
+			_linkerModule.reset(new llvm::Module("ccons", _context));
+			_linker.reset(new llvm::Linker(_linkerModule.get());
+		}
 		string error;
-		_linker->LinkInModule(module, &error);
+		_linker->linkInModule(module, llvm::Linker::DestroySource, &error);
 		if (!error.empty()) {
 			oprintf(_err, "Error: %s\n", error.c_str());
 			reportInputError();

@@ -30,6 +30,7 @@ namespace llvm {
 	class ExecutionEngine;
 	class Function;
 	class Linker;
+	class Module;
 } // namespace llvm
 
 namespace clang {
@@ -136,6 +137,7 @@ private:
 	clang::LangOptions _options;
 	llvm::OwningPtr<Parser> _parser;
 	llvm::LLVMContext _context;
+	llvm::OwningPtr<llvm::Module> _linkerModule;
 	llvm::OwningPtr<llvm::Linker> _linker;
 	llvm::OwningPtr<llvm::ExecutionEngine> _engine;
 	llvm::OwningPtr<DiagnosticsProvider> _dp;
