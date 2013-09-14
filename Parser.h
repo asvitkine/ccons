@@ -50,6 +50,7 @@ class ParseOperation : public clang::ModuleLoader {
 public:
 	
 	ParseOperation(const clang::LangOptions& options,
+	               clang::TargetOptions* targetOptions,
 	               clang::DiagnosticsEngine *engine,
 	               clang::PPCallbacks *callbacks = 0);
 	virtual ~ParseOperation();
@@ -71,7 +72,6 @@ public:
 private:
 
 	clang::LangOptions _langOpts;
-	llvm::IntrusiveRefCntPtr<clang::TargetOptions> _targetOptions;
 	llvm::IntrusiveRefCntPtr<clang::HeaderSearchOptions> _hsOptions;
 	llvm::IntrusiveRefCntPtr<clang::PreprocessorOptions> _ppOptions;
 	llvm::OwningPtr<clang::FileSystemOptions> _fsOpts;
@@ -93,7 +93,7 @@ class Parser {
 
 public:
 
-	explicit Parser(const clang::LangOptions& options);
+	Parser(const clang::LangOptions& options, clang::TargetOptions* targetOptions);
 	~Parser();
 
 	enum InputType { Incomplete, TopLevel, Stmt }; 
@@ -132,6 +132,7 @@ public:
 private:
 
 	const clang::LangOptions& _options;
+	clang::TargetOptions* _targetOptions;
 	std::vector<ParseOperation*> _ops;
 
 	int analyzeTokens(clang::Preprocessor& PP,
