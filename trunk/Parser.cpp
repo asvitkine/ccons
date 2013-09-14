@@ -45,25 +45,20 @@ namespace ccons {
 //
 
 ParseOperation::ParseOperation(const clang::LangOptions& options,
+                               clang::TargetOptions* targetOptions,
                                clang::DiagnosticsEngine *diag,
                                clang::PPCallbacks *callbacks) :
 	_langOpts(options),
-	_targetOptions(new clang::TargetOptions),
 	_hsOptions(new clang::HeaderSearchOptions),
 	_ppOptions(new clang::PreprocessorOptions),
 	_fsOpts(new clang::FileSystemOptions),
 	_fm(new clang::FileManager(*_fsOpts)),
 	_sm(new clang::SourceManager(*diag, *_fm))
 {
-	llvm::Triple triple(LLVM_DEFAULT_TARGET_TRIPLE);
-	_targetOptions->ABI = "";
-	_targetOptions->CPU = "";
-	_targetOptions->Features.clear();
-	_targetOptions->Triple = LLVM_DEFAULT_TARGET_TRIPLE;
-	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, &*_targetOptions));
+	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
 
 	_hs.reset(new clang::HeaderSearch(_hsOptions, *_fm, *diag, options, &*_target));
-	ApplyHeaderSearchOptions(*_hs, *_hsOptions, options, triple);
+	ApplyHeaderSearchOptions(*_hs, *_hsOptions, options, llvm::Triple(targetOptions->Triple));
 	_pp.reset(new clang::Preprocessor(_ppOptions, *diag, _langOpts, &*_target, *_sm, *_hs, *this));
 	_pp->addPPCallbacks(callbacks);
 	clang::FrontendOptions frontendOptions;
@@ -119,8 +114,10 @@ void ParseOperation::makeModuleVisible(clang::Module *Mod,
 // Parser
 //
 
-Parser::Parser(const clang::LangOptions& options) :
-	_options(options)
+Parser::Parser(const clang::LangOptions& options,
+               clang::TargetOptions* targetOptions) :
+	_options(options),
+	_targetOptions(targetOptions)
 {
 }
 
@@ -156,7 +153,7 @@ Parser::InputType Parser::analyzeInput(const string& contextSource,
 
 	NullDiagnosticProvider ndp;
 	llvm::OwningPtr<ParseOperation>
-		parseOp(new ParseOperation(_options, ndp.getDiagnosticsEngine()));
+		parseOp(new ParseOperation(_options, _targetOptions, ndp.getDiagnosticsEngine()));
 	llvm::MemoryBuffer *memBuf =
 		createMemoryBuffer(buffer, "", parseOp->getSourceManager());
 
@@ -337,7 +334,7 @@ int Parser::analyzeTokens(clang::Preprocessor& PP,
 ParseOperation * Parser::createParseOperation(clang::DiagnosticsEngine *engine,
                                               clang::PPCallbacks *callbacks)
 {
-	return new ParseOperation(_options, engine, callbacks);
+	return new ParseOperation(_options, _targetOptions, engine, callbacks);
 }
 
 void Parser::parse(const string& src,

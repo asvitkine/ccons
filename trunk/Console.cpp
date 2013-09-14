@@ -63,7 +63,8 @@ public:
 	std::vector<string>& getMacrosVector() { return _macros; }
 
 	void MacroDefined(const clang::Token& token,
-	                  const clang::MacroInfo *MI) {
+	                  const clang::MacroDirective* MD) {
+		const clang::MacroInfo* MI = MD->getMacroInfo();
 		if (MI->isBuiltinMacro())
 			return;
 		clang::FileID mainFileID = _sm->getMainFileID();
@@ -76,7 +77,8 @@ public:
 	}
 
 	void MacroUndefined(const clang::Token& token,
-	                    const clang::MacroInfo *MI) {
+	                    const clang::MacroDirective* MD) {
+		const clang::MacroInfo* MI = MD->getMacroInfo();
 		if (MI->isBuiltinMacro())
 			return;
 		clang::FileID mainFileID = _sm->getMainFileID();
@@ -114,7 +116,13 @@ Console::Console(bool debugMode, std::ostream& out, std::ostream& err) :
 {
 	_options.C99 = true;
 	_options.ImplicitInt = false;
-	_parser.reset(new Parser(_options));
+
+	_targetOptions.ABI = "";
+	_targetOptions.CPU = "";
+	_targetOptions.Features.clear();
+	_targetOptions.Triple = LLVM_DEFAULT_TARGET_TRIPLE;
+
+	_parser.reset(new Parser(_options, &_targetOptions));
 	// Declare exit() so users may call it without needing to #include <stdio.h>
 	_lines.push_back(CodeLine("void exit(int status);", DeclLine));
 }
@@ -565,7 +573,7 @@ bool Console::compileLinkAndRun(const string& src,
 	llvm::OwningPtr<clang::CodeGenerator> codegen;
 	clang::CodeGenOptions codeGenOptions;
 	codeGenOptions.InstrumentFunctions = false;
-	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnosticsEngine(), "-", codeGenOptions, _context));
+	codegen.reset(CreateLLVMCodeGen(*_dp->getDiagnosticsEngine(), "-", codeGenOptions, _targetOptions, _context));
 	if (_debugMode)
 		oprintf(_err, "Parsing in compileLinkAndRun()...\n");
 	_macros = new MacroDetector(_options);
@@ -583,7 +591,7 @@ bool Console::compileLinkAndRun(const string& src,
 	if (module) {
 		if (!_linker) {
 			_linkerModule.reset(new llvm::Module("ccons", _context));
-			_linker.reset(new llvm::Linker(_linkerModule.get());
+			_linker.reset(new llvm::Linker(_linkerModule.get()));
 		}
 		string error;
 		_linker->linkInModule(module, llvm::Linker::DestroySource, &error);

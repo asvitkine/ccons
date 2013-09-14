@@ -24,6 +24,7 @@
 #include <llvm/Support/raw_os_ostream.h>
 
 #include <clang/Basic/LangOptions.h>
+#include <clang/Basic/TargetOptions.h>
 
 namespace llvm {
 	struct GenericValue;
@@ -135,6 +136,7 @@ private:
 	std::ostream& _err;
 	mutable llvm::raw_os_ostream _raw_err;
 	clang::LangOptions _options;
+	clang::TargetOptions _targetOptions;
 	llvm::OwningPtr<Parser> _parser;
 	llvm::LLVMContext _context;
 	llvm::OwningPtr<llvm::Module> _linkerModule;
