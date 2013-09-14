@@ -18,6 +18,7 @@
 
 #include <clang/AST/AST.h>
 #include <clang/AST/ASTConsumer.h>
+#include <clang/Basic/Diagnostic.h>
 #include <clang/Basic/FileSystemOptions.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/TargetOptions.h>
@@ -28,9 +29,6 @@
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Parse/ParseAST.h>
 #include <clang/Sema/SemaDiagnostic.h>
-
-#include <clang/Basic/TargetInfo.h>
-#include <clang/Basic/Diagnostic.h>
 
 #include "Diagnostics.h"
 #include "SrcGen.h"
@@ -55,7 +53,7 @@ ParseOperation::ParseOperation(const clang::LangOptions& options,
 	_fm(new clang::FileManager(*_fsOpts)),
 	_sm(new clang::SourceManager(*diag, *_fm))
 {
-	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, targetOptions));
+	_target.reset(clang::TargetInfo::CreateTargetInfo(*diag, new clang::TargetOptions(*targetOptions)));
 
 	_hs.reset(new clang::HeaderSearch(_hsOptions, *_fm, *diag, options, &*_target));
 	ApplyHeaderSearchOptions(*_hs, *_hsOptions, options, llvm::Triple(targetOptions->Triple));
