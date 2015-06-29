@@ -4,6 +4,12 @@ ccons README
 The goal of ccons is to provide an interactive console for the C programming
 language, similar to what irb is for Ruby.
 
+The project builds on top of clang and llvm.
+
+See presentation:
+
+https://raw.githubusercontent.com/asvitkine/ccons/master/docs/ccons-presentation.pdf
+
 
 How to build:
 =============
